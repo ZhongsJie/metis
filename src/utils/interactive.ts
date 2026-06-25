@@ -5,6 +5,7 @@ import chalk from 'chalk';
 export interface SelectOption {
   name: string;
   description: string;
+  value?: string;
   disabled?: boolean;
 }
 
@@ -61,7 +62,7 @@ export async function checkboxSelect(
 
   const choices = options.map(o => ({
     name: o.name,
-    value: o.name,
+    value: o.value ?? o.name,
     description: o.description,
     disabled: o.disabled || false,
   }));

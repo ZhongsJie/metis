@@ -61,8 +61,9 @@ export function registerRemoveCommand(program: Command): void {
         }
 
         const options = skills.map(s => ({
-          name: s.name,
-          description: `${s.source} · ${s.linkedProjects.length > 0 ? `linked to ${s.linkedProjects.length} projects` : 'not linked'}`,
+          name: `${s.name} (${s.source})${s.linkedProjects.length > 0 ? ` · linked to ${s.linkedProjects.length} project(s)` : ''}`,
+          value: s.name,
+          description: s.description,
         }));
 
         const selected = await selectFromList(options, {
