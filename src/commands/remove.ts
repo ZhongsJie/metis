@@ -19,7 +19,7 @@ async function doRemove(name: string, force?: boolean) {
     for (const p of entry.linkedProjects) {
       console.error(chalk.dim(`  → ${p}`));
     }
-    console.error(chalk.dim('  Unlink them first: skill unlink <name> --from <path>'));
+    console.error(chalk.dim('  Unlink them first: metis unlink <name> -f <path>'));
     console.error(chalk.dim('  Or use --force to remove anyway.'));
     return;
   }

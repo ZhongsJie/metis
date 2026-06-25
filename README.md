@@ -1,71 +1,71 @@
-# Skill Manager
+# Metis
 
-Manage Claude Code skills per-project instead of globally.
+Per-project skill manager for Claude Code. Μῆτις — the Greek Titaness of skill, wisdom, and craft.
 
 ## Setup
 
 ```bash
-git clone <this-repo> ~/skills
-cd ~/skills
+git clone <this-repo> ~/metis
+cd ~/metis
 npm install
 
 # Add to PATH (append to ~/.zshrc or ~/.bashrc)
-export PATH="$HOME/skills/bin:$PATH"
+export PATH="$HOME/metis/bin:$PATH"
 ```
 
 ## Quick Start
 
 ```bash
-# Add a skill source (marketplace)
-skill source add superpowers https://github.com/obra/superpowers.git
+# Add a metis source (marketplace)
+metis source add superpowers https://github.com/obra/superpowers.git
 
 # Search available skills
-skill search pptx
+metis search pptx
 
 # Install a skill
-skill install pptx-generator
+metis install pptx-generator
 
-# Initialize a project for skill linking
-skill init ~/my-project
+# Initialize a project for metis linking
+metis init ~/my-project
 
 # Link skills to your project (interactive checkbox)
-skill link -i -t ~/my-project
+metis link -i -t ~/my-project
 
 # List installed skills
-skill list
+metis list
 
 # See what's linked
-skill linked
+metis linked
 ```
 
 ## Commands
 
 | Command | Description |
 |---------|-------------|
-| `skill init [path]` | Create `.claude/skills/` or `.codex/skills/` in project |
-| `skill source add <name> <url>` | Add a skill source (marketplace or git) |
-| `skill source list` | List configured sources |
-| `skill source remove <name>` | Remove a source |
-| `skill source update <name>` | Pull latest from source repository |
-| `skill search <query>` | Search available skills across all sources |
-| `skill install <name>` | Install a skill |
-| `skill install <name> -s <url>` | Install directly from a Git URL |
-| `skill list` | List installed skills |
-| `skill info <name>` | Show skill details and SKILL.md preview |
-| `skill update [name]` | Update skill(s) to latest |
-| `skill remove [name]` | Remove a skill (`-i` for interactive) |
-| `skill link [name]` | Link skill to project (`-i` for interactive checkbox) |
-| `skill unlink [name]` | Unlink skill from project (`-i` for interactive checkbox) |
-| `skill linked [name]` | Show link status for all or specific skill |
+| `metis init [path]` | Create `.claude/skills/` or `.codex/skills/` in project |
+| `metis source add <name> <url>` | Add a metis source (marketplace or git) |
+| `metis source list` | List configured sources |
+| `metis source remove <name>` | Remove a source |
+| `metis source update <name>` | Pull latest from source repository |
+| `metis search <query>` | Search available skills across all sources |
+| `metis install <name>` | Install a skill |
+| `metis install <name> -s <url>` | Install directly from a Git URL |
+| `metis list` | List installed skills |
+| `metis info <name>` | Show skill details and SKILL.md preview |
+| `metis update [name]` | Update skill(s) to latest |
+| `metis remove [name]` | Remove a skill (`-i` for interactive) |
+| `metis link [name]` | Link skill to project (`-i` for interactive checkbox) |
+| `metis unlink [name]` | Unlink skill from project (`-i` for interactive checkbox) |
+| `metis linked [name]` | Show link status for all or specific skill |
 
 ## Interactive Mode
 
 Use `-i` for interactive selection with checkbox UI:
 
 ```bash
-skill remove -i           # pick skills to remove
-skill link -i             # pick skills to link (checkbox)
-skill unlink -i           # pick skills to unlink (checkbox)
+metis remove -i           # pick skills to remove
+metis link -i             # pick skills to link (checkbox)
+metis unlink -i           # pick skills to unlink (checkbox)
 ```
 
 - **↑/↓** navigate
@@ -115,7 +115,7 @@ Color-coded status indicators:
         └── pptx-generator → ~/skills/skills/minimax/pptx-generator
 ```
 
-**Marketplace sources** (collections like superpowers) are cloned once to `.sources/<name>/`. Individual skills are symlinked into `skills/<name>/`. Updating the source (`skill source update`) pulls latest for all skills at once.
+**Marketplace sources** (collections like superpowers) are cloned once to `.sources/<name>/`. Individual skills are symlinked into `skills/<name>/`. Updating the source (`metis source update`) pulls latest for all skills at once.
 
 **Git sources** (single-skill repos) are cloned directly into `skills/<name>/`.
 

@@ -14,7 +14,7 @@ export function registerListCommand(program: Command): void {
         skills = skills.filter(s => s.source === opts.source);
       }
       if (skills.length === 0) {
-        console.log(chalk.dim('No skills installed. Use "skill install <name>" to install one.'));
+        console.log(chalk.dim('No skills installed. Use "metis install <name>" to install one.'));
         return;
       }
       for (const s of skills) {

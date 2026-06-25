@@ -31,6 +31,6 @@ export function registerInitCommand(program: Command): void {
       writeJson(join(platformDir, 'skills.json'), { skills: [] });
 
       console.log(chalk.green(`✓ Initialized ${skillsDir} (${platform})`));
-      console.log(chalk.dim(`  Run 'skill link <name> --to ${target} --platform ${platform}' to add skills.`));
+      console.log(chalk.dim(`  Run 'metis link <name> -t ${target} -p ${platform}' to add skills.`));
     });
 }

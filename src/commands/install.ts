@@ -38,7 +38,7 @@ async function doInstall(name: string, fromUrl?: string) {
   const sources = loadSources();
   const sourceEntries = Object.values(sources);
   if (sourceEntries.length === 0) {
-    console.error(chalk.red('Error: No sources configured. Use "skill source add" first.'));
+    console.error(chalk.red('Error: No sources configured. Use "metis source add" first.'));
     process.exit(1);
   }
 
@@ -79,7 +79,7 @@ async function doInstall(name: string, fromUrl?: string) {
   }
 
   console.error(chalk.red(`Error: Skill '${name}' not found in any configured source.`));
-  console.error(chalk.dim('  Use "skill search <query>" to find skills, or "skill source add" to add more sources.'));
+  console.error(chalk.dim('  Use "metis search <query>" to find skills, or "metis source add" to add more sources.'));
   process.exit(1);
 }
 

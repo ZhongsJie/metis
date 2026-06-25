@@ -38,7 +38,7 @@ export function registerSourceCommand(program: Command): void {
       const sources = loadSources();
       const entries = Object.values(sources);
       if (entries.length === 0) {
-        console.log(chalk.dim('No sources configured. Use "skill source add <name> <url>" to add one.'));
+        console.log(chalk.dim('No sources configured. Use "metis source add <name> <url>" to add one.'));
         return;
       }
       for (const s of entries) {

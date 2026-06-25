@@ -1,11 +1,11 @@
 {
-  "name": "skill-manager",
+  "name": "metis",
   "version": "0.1.0",
-  "description": "CLI tool for managing Claude Code skills per-project",
+  "description": "Per-project skill manager for Claude Code — install, organize, and link skills with symlinks",
   "private": true,
   "type": "module",
   "bin": {
-    "skill": "./bin/skill"
+    "metis": "./bin/metis"
   },
   "scripts": {
     "dev": "npx tsx src/cli.ts",

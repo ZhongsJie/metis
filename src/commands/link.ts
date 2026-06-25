@@ -70,7 +70,7 @@ export function registerLinkCommand(program: Command): void {
 
         const allSkills = registry.list();
         if (allSkills.length === 0) {
-          console.log(chalk.dim('No skills installed. Use "skill install <name>" first.'));
+          console.log(chalk.dim('No skills installed. Use "metis install <name>" first.'));
           return;
         }
 

@@ -14,15 +14,15 @@ import { registerLinkCommand } from './commands/link.js';
 const program = new Command();
 
 program
-  .name('skill')
-  .description('Manage Claude Code skills per-project')
+  .name('metis')
+  .description('Per-project skill manager for Claude Code — install, organize, and link')
   .version('0.1.0')
   .addHelpText('after', `
 ${chalk.dim('Examples:')}
-  $ skill source add superpowers https://github.com/obra/superpowers.git
-  $ skill install brainstorming
-  $ skill link brainstorming --to ~/my-project
-  $ skill list`);
+  $ metis source add superpowers https://github.com/obra/superpowers.git
+  $ metis install brainstorming
+  $ metis link -i -t ~/my-project
+  $ metis ls`);
 
 registerInitCommand(program);
 registerSourceCommand(program);
