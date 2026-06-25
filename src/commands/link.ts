@@ -31,7 +31,6 @@ function ensureSkillsDir(projectPath: string, platform: Platform): string {
 export function registerLinkCommand(program: Command): void {
   program
     .command('link <name>')
-    .alias('ln')
     .description('Link a skill into a project')
     .option('--to <path>', 'Target project path (defaults to cwd)')
     .option('--platform <platform>', 'Target platform: claude-code (default) or codex', 'claude-code')
@@ -62,7 +61,6 @@ export function registerLinkCommand(program: Command): void {
 
   program
     .command('unlink <name>')
-    .alias('ul')
     .description('Unlink a skill from a project')
     .option('--from <path>', 'Target project path (defaults to cwd)')
     .option('--platform <platform>', 'Target platform: claude-code (default) or codex', 'claude-code')
@@ -84,7 +82,6 @@ export function registerLinkCommand(program: Command): void {
 
   program
     .command('linked [name]')
-    .alias('lk')
     .description('Show which projects are linked to a skill, or all links')
     .action(async (name?: string) => {
       const registry = new Registry();

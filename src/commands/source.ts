@@ -6,7 +6,6 @@ import { getHandler } from '../sources/router.js';
 export function registerSourceCommand(program: Command): void {
   const sourceCmd = program
     .command('source')
-    .alias('src')
     .description('Manage skill sources');
 
   sourceCmd

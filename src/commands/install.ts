@@ -11,7 +11,6 @@ import { parseSkillFile } from '../utils/skill-parser.js';
 export function registerInstallCommand(program: Command): void {
   program
     .command('install <name>')
-    .alias('i')
     .description('Install a skill from configured sources')
     .option('--from <url>', 'Install directly from a Git URL')
     .option('--force', 'Force reinstall if already installed')
