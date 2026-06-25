@@ -7,9 +7,8 @@ import { simpleGit } from 'simple-git';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { parseSkillFile } from '../utils/skill-parser.js';
-import { selectFromList } from '../utils/interactive.js';
 
-async function doInstall(name: string, fromUrl?: string, sourceName?: string) {
+async function doInstall(name: string, fromUrl?: string) {
   const registry = new Registry();
 
   if (registry.get(name)) {
@@ -37,10 +36,7 @@ async function doInstall(name: string, fromUrl?: string, sourceName?: string) {
   }
 
   const sources = loadSources();
-  let sourceEntries = Object.values(sources);
-  if (sourceName) {
-    sourceEntries = sourceEntries.filter(s => s.name === sourceName);
-  }
+  const sourceEntries = Object.values(sources);
   if (sourceEntries.length === 0) {
     console.error(chalk.red('Error: No sources configured. Use "skill source add" first.'));
     process.exit(1);
@@ -89,64 +85,15 @@ async function doInstall(name: string, fromUrl?: string, sourceName?: string) {
 
 export function registerInstallCommand(program: Command): void {
   program
-    .command('install [name]')
-    .description('Install a skill from configured sources (use -i for interactive selection)')
-    .option('-i, --interactive', 'Interactive selection mode')
+    .command('install <name>')
+    .description('Install a skill from configured sources')
     .option('-s, --from <url>', 'Install directly from a Git URL')
     .option('-f, --force', 'Force reinstall if already installed')
-    .action(async (name: string | undefined, opts: { interactive?: boolean; from?: string; force?: boolean }) => {
-      // Interactive mode: show available skills and let user pick
-      if (opts.interactive || !name) {
-        const registry = new Registry();
-        const installed = new Set(registry.list().map(s => s.name));
-        const sources = loadSources();
-        const allSkills: { name: string; description: string; source: string; }[] = [];
-
-        for (const source of Object.values(sources)) {
-          try {
-            const handler = getHandler(source);
-            const skills = await handler.listSkills(source, getSourcesDir());
-            for (const s of skills) {
-              if (!installed.has(s.name)) {
-                allSkills.push(s);
-              }
-            }
-          } catch {}
-        }
-
-        if (allSkills.length === 0) {
-          console.log(chalk.dim('No available skills found. All skills are already installed, or add more sources.'));
-          return;
-        }
-
-        const selected = await selectFromList(allSkills, {
-          prompt: 'Select skill(s) to install',
-          allowMultiple: true,
-        });
-
-        if (selected.length === 0) {
-          console.log(chalk.dim('Cancelled.'));
-          return;
-        }
-
-        // Map selected names back to their source for direct install
-        for (const skillName of selected) {
-          const info = allSkills.find(s => s.name === skillName);
-          try {
-            await doInstall(skillName, undefined, info?.source);
-          } catch (err: any) {
-            console.error(chalk.red(`  ✗ ${skillName}: ${err.message}`));
-          }
-        }
-        return;
-      }
-
-      // Direct install
-      if (opts.force && name) {
-        // Remove existing entry if --force
+    .action(async (name: string, opts: { from?: string; force?: boolean }) => {
+      if (opts.force) {
         const registry = new Registry();
         registry.remove(name);
       }
-      await doInstall(name!, opts.from);
+      await doInstall(name, opts.from);
     });
 }
