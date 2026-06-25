@@ -7,6 +7,7 @@ import { getHandler } from '../sources/router.js';
 export function registerSearchCommand(program: Command): void {
   program
     .command('search <query>')
+    .alias('s')
     .description('Search available skills across all sources')
     .action(async (query: string) => {
       const registry = new Registry();

@@ -5,6 +5,7 @@ import { Registry } from '../registry.js';
 export function registerListCommand(program: Command): void {
   program
     .command('list')
+    .alias('ls')
     .description('List installed skills')
     .option('--source <name>', 'Filter by source')
     .action(async (opts: { source?: string }) => {

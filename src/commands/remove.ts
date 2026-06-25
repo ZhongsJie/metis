@@ -8,6 +8,7 @@ import { resolve } from 'node:path';
 export function registerRemoveCommand(program: Command): void {
   program
     .command('remove <name>')
+    .alias('rm')
     .description('Remove an installed skill')
     .option('--force', 'Force removal even if linked')
     .action(async (name: string, opts: { force?: boolean }) => {

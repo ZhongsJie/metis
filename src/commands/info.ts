@@ -9,6 +9,7 @@ import { getSkillsDir } from '../sources/config.js';
 export function registerInfoCommand(program: Command): void {
   program
     .command('info <name>')
+    .alias('in')
     .description('Show skill details')
     .action(async (name: string) => {
       const registry = new Registry();

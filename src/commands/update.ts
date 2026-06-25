@@ -7,6 +7,7 @@ import { getHandler } from '../sources/router.js';
 export function registerUpdateCommand(program: Command): void {
   program
     .command('update [name]')
+    .alias('up')
     .description('Update installed skills')
     .action(async (name?: string) => {
       const registry = new Registry();
