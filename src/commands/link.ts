@@ -77,9 +77,8 @@ export function registerLinkCommand(program: Command): void {
         const options = allSkills.map(s => {
           const isLinked = linkedHere.has(s.name);
           return {
-            name: isLinked ? `${s.name}` : s.name,
-            description: `${s.source} — ${s.description.slice(0, 50)}${isLinked ? ' (linked)' : ''}`,
-            disabled: isLinked,
+            name: isLinked ? `${s.name} (linked)` : s.name,
+            description: `${s.source} — ${s.description.slice(0, 50)}`,
           };
         });
 
@@ -91,8 +90,17 @@ export function registerLinkCommand(program: Command): void {
         }
 
         console.log(chalk.dim(`Linking to ${projectPath} (${platform})...`));
+        let skipped = 0;
         for (const skillName of selected) {
-          doLink(skillName, projectPath, platform);
+          if (linkedHere.has(skillName)) {
+            skipped++;
+            console.log(chalk.dim(`  ⏭ ${skillName} (linked)`));
+          } else {
+            doLink(skillName, projectPath, platform);
+          }
+        }
+        if (skipped > 0) {
+          console.log(chalk.dim(`  Skipped ${skipped} already-linked skill(s).`));
         }
         return;
       }
@@ -146,9 +154,8 @@ export function registerLinkCommand(program: Command): void {
         const options = allSkills.map(s => {
           const isLinked = linkedHere.has(s.name);
           return {
-            name: s.name,
-            description: `${s.source} — ${s.description.slice(0, 50)}${isLinked ? '' : ' (not linked)'}`,
-            disabled: !isLinked,
+            name: isLinked ? s.name : `${s.name} (not linked)`,
+            description: `${s.source} — ${s.description.slice(0, 50)}`,
           };
         });
 
@@ -160,16 +167,27 @@ export function registerLinkCommand(program: Command): void {
         }
 
         console.log(chalk.dim(`Unlinking from ${projectPath}...`));
+        let skipped = 0;
         for (const skillName of selected) {
-          const linkPath = join(skillsDir, skillName);
-          if (isSymlink(linkPath)) {
-            removeSymlink(linkPath);
-            const registry = new Registry();
-            registry.removeLinkedProject(skillName, projectPath);
-            console.log(chalk.green(`  ✓ Unlinked '${skillName}'`));
+          if (!linkedHere.has(skillName)) {
+            skipped++;
+            console.log(chalk.dim(`  ⏭ ${skillName} (not linked)`));
           } else {
-            console.log(chalk.yellow(`  ⚠ '${skillName}' not found as symlink.`));
+            const linkPath = join(skillsDir, skillName);
+            if (isSymlink(linkPath)) {
+              removeSymlink(linkPath);
+              const r = new Registry();
+              r.removeLinkedProject(skillName, projectPath);
+              console.log(chalk.green(`  ✓ Unlinked '${skillName}'`));
+            } else {
+              console.log(chalk.yellow(`  ⚠ '${skillName}' symlink not found, registry cleaned.`));
+              const r = new Registry();
+              r.removeLinkedProject(skillName, projectPath);
+            }
           }
+        }
+        if (skipped > 0) {
+          console.log(chalk.dim(`  Skipped ${skipped} not-linked skill(s).`));
         }
         return;
       }
