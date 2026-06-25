@@ -76,9 +76,9 @@ export function registerLinkCommand(program: Command): void {
 
         const options = allSkills.map(s => {
           const isLinked = linkedHere.has(s.name);
-          const status = isLinked ? ' (linked)' : '';
+          const status = isLinked ? chalk.green(' (linked)') : '';
           return {
-            name: `${s.name} (${s.source})${status}`,
+            name: `${s.name} ${chalk.dim(`(${s.source})`)}${status}`,
             value: s.name,
             description: s.description,
           };
@@ -155,9 +155,9 @@ export function registerLinkCommand(program: Command): void {
 
         const options = allSkills.map(s => {
           const isLinked = linkedHere.has(s.name);
-          const status = isLinked ? '' : ' (not linked)';
+          const status = isLinked ? '' : chalk.gray(' (not linked)');
           return {
-            name: `${s.name} (${s.source})${status}`,
+            name: `${s.name} ${chalk.dim(`(${s.source})`)}${status}`,
             value: s.name,
             description: s.description,
           };
