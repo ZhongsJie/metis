@@ -38,7 +38,7 @@ export function registerInstallCommand(program: Command): void {
             source: '__direct__',
             sourceType: 'git',
             sourceUrl: opts.from,
-            installPath: `skills/${relPath}`,
+            installPath: relPath,
             version: 'latest',
             installedAt: new Date().toISOString(),
             updatedAt: new Date().toISOString(),
@@ -63,11 +63,19 @@ export function registerInstallCommand(program: Command): void {
       for (const source of sourceEntries) {
         const handler = getHandler(source);
         try {
+          // Try listing first (fast path if repo already cloned)
           const skills = await handler.listSkills(source, getSourcesDir());
           const match = skills.find(s => s.name === name);
-          if (match) {
-            console.log(chalk.dim(`Found '${name}' in source '${source.name}'. Installing...`));
+
+          if (match || source.type === 'marketplace') {
+            // For marketplace sources, download will clone the repo if needed
+            console.log(chalk.dim(`Installing '${name}' from ${source.name}...`));
             const relPath = await handler.download(source, name, getSourcesDir(), getSkillsDir());
+
+            // Get metadata from installed SKILL.md
+            const skillMdPath = resolve(getSkillsDir(), relPath, 'SKILL.md');
+            const meta = parseSkillFile(readFileSync(skillMdPath, 'utf-8'));
+            if (!meta) throw new Error('Installed skill has invalid SKILL.md');
 
             // Get version from git
             let version = 'unknown';
@@ -78,18 +86,18 @@ export function registerInstallCommand(program: Command): void {
             } catch {}
 
             const entry: SkillEntry = {
-              name: match.name,
-              description: match.description,
+              name: meta.name,
+              description: meta.description,
               source: source.name,
               sourceType: 'marketplace',
-              installPath: `skills/${relPath}`,
+              installPath: relPath,
               version,
               installedAt: new Date().toISOString(),
               updatedAt: new Date().toISOString(),
               linkedProjects: [],
             };
             registry.add(entry);
-            console.log(chalk.green(`✓ Installed '${name}' from ${source.name}`));
+            console.log(chalk.green(`✓ Installed '${meta.name}' from ${source.name}`));
             return;
           }
         } catch (err: any) {
