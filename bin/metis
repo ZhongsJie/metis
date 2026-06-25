@@ -1,6 +1,4 @@
 #!/usr/bin/env bash
-# Suppress getcwd errors from stale terminal CWD
-cd / 2>/dev/null || true
 set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
@@ -9,7 +7,7 @@ if [[ ! -f "$ENTRY_POINT" ]]; then
   echo "Error: Entry point not found at $ENTRY_POINT" >&2
   exit 1
 fi
-# Switch to project dir so npx has a valid CWD
+# Switch to project dir so npx has a valid CWD regardless of terminal state
 cd "$PROJECT_DIR"
 # Uses tsx for development; compile with tsc for production and use node dist/cli.js
 exec npx tsx "$ENTRY_POINT" "$@"
