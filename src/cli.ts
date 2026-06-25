@@ -19,10 +19,9 @@ program
   .version('0.1.0')
   .addHelpText('after', `
 ${chalk.dim('Examples:')}
-  $ metis source add superpowers https://github.com/obra/superpowers.git
-  $ metis install brainstorming
-  $ metis link -i -t ~/my-project
-  $ metis ls`);
+  $ metis source add https://github.com/obra/superpowers.git
+  $ metis list
+  $ metis link -i -t ~/my-project`);
 
 registerInitCommand(program);
 registerSourceCommand(program);

@@ -5,7 +5,7 @@ import { Registry } from '../registry.js';
 export function registerListCommand(program: Command): void {
   program
     .command('list')
-    .description('List installed skills')
+    .description('List discovered skills')
     .option('--source <name>', 'Filter by source')
     .action(async (opts: { source?: string }) => {
       const registry = new Registry();
@@ -14,14 +14,14 @@ export function registerListCommand(program: Command): void {
         skills = skills.filter(s => s.source === opts.source);
       }
       if (skills.length === 0) {
-        console.log(chalk.dim('No skills installed. Use "metis install <name>" to install one.'));
+        console.log(chalk.dim('No skills found. Use "metis source add <git-url>" to add a source.'));
         return;
       }
       for (const s of skills) {
         const linked = s.linkedProjects.length > 0
           ? chalk.green(`linked (${s.linkedProjects.length} projects)`)
           : chalk.dim('not linked');
-        console.log(`  ${chalk.bold(s.name)} ${chalk.dim(`(${s.source})`)} — ${linked}`);
+        console.log(`  ${chalk.bold(s.name)} ${chalk.dim(`(${s.id})`)} — ${linked}`);
         if (s.linkedProjects.length > 0) {
           for (const p of s.linkedProjects) {
             console.log(chalk.dim(`    → ${p}`));

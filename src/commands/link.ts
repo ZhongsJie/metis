@@ -3,7 +3,6 @@ import chalk from 'chalk';
 import { Registry } from '../registry.js';
 import { getSkillsDir } from '../sources/config.js';
 import { createSymlink, removeSymlink, isSymlink } from '../utils/symlink.js';
-import { ensureDir, writeJson } from '../utils/fs.js';
 import { existsSync } from 'node:fs';
 import { resolve, join } from 'node:path';
 import { checkboxSelect } from '../utils/interactive.js';
@@ -19,32 +18,44 @@ function resolveSkillsDir(projectPath: string, platform: Platform): string {
   return join(projectPath, PLATFORM_DIRS[platform], 'skills');
 }
 
-function ensureSkillsDir(projectPath: string, platform: Platform): string {
+function getInitializedSkillsDir(projectPath: string, platform: Platform): string | null {
   const dir = resolveSkillsDir(projectPath, platform);
-  if (!existsSync(dir)) {
-    ensureDir(dir);
-    writeJson(join(dir, '..', 'skills.json'), { skills: [] });
-    console.log(chalk.dim(`  Created ${dir}`));
-  }
-  return dir;
+  return existsSync(dir) ? dir : null;
+}
+
+function printInitRequired(projectPath: string, platform: Platform): void {
+  console.error(chalk.red(`Error: Project is not initialized for ${platform}.`));
+  console.error(chalk.dim(`  Run: metis init ${projectPath} -p ${platform}`));
 }
 
 function doLink(name: string, projectPath: string, platform: Platform) {
   const registry = new Registry();
   const entry = registry.get(name);
   if (!entry) {
-    console.error(chalk.red(`  ✗ '${name}' is not installed.`));
+    const matches = registry.findByName(name);
+    if (matches.length > 1) {
+      console.error(chalk.red(`  ✗ '${name}' exists in multiple sources.`));
+      for (const match of matches) {
+        console.error(chalk.dim(`    Use: metis link ${match.id} -t ${projectPath} -p ${platform}`));
+      }
+    } else {
+      console.error(chalk.red(`  ✗ '${name}' not found.`));
+    }
     return;
   }
-  const skillsDir = ensureSkillsDir(projectPath, platform);
-  const linkPath = join(skillsDir, name);
+  const skillsDir = getInitializedSkillsDir(projectPath, platform);
+  if (!skillsDir) {
+    printInitRequired(projectPath, platform);
+    return;
+  }
+  const linkPath = join(skillsDir, entry.name);
   if (existsSync(linkPath)) {
-    console.log(chalk.yellow(`  ⚠ '${name}' already linked.`));
+    console.log(chalk.yellow(`  ⚠ '${entry.name}' already linked.`));
     return;
   }
   createSymlink(resolve(getSkillsDir(), entry.installPath), linkPath);
-  registry.addLinkedProject(name, projectPath);
-  console.log(chalk.green(`  ✓ Linked '${name}'`));
+  registry.addLinkedProject(entry.id, projectPath);
+  console.log(chalk.green(`  ✓ Linked '${entry.id}'`));
 }
 
 export function registerLinkCommand(program: Command): void {
@@ -64,22 +75,22 @@ export function registerLinkCommand(program: Command): void {
         const linkedHere = new Set<string>();
         for (const s of registry.list()) {
           if (s.linkedProjects.includes(projectPath)) {
-            linkedHere.add(s.name);
+            linkedHere.add(s.id);
           }
         }
 
         const allSkills = registry.list();
         if (allSkills.length === 0) {
-          console.log(chalk.dim('No skills installed. Use "metis install <name>" first.'));
+          console.log(chalk.dim('No skills found. Use "metis source add <git-url>" first.'));
           return;
         }
 
         const options = allSkills.map(s => {
-          const isLinked = linkedHere.has(s.name);
+          const isLinked = linkedHere.has(s.id);
           const status = isLinked ? chalk.green(' (linked)') : '';
           return {
-            name: `${s.name} ${chalk.dim(`(${s.source})`)}${status}`,
-            value: s.name,
+            name: `${s.name} ${chalk.dim(`(${s.id})`)}${status}`,
+            value: s.id,
             description: s.description,
           };
         });
@@ -111,18 +122,30 @@ export function registerLinkCommand(program: Command): void {
       const registry = new Registry();
       const entry = registry.get(name!);
       if (!entry) {
-        console.error(chalk.red(`Error: Skill '${name}' is not installed.`));
+        const matches = registry.findByName(name!);
+        if (matches.length > 1) {
+          console.error(chalk.red(`Error: Skill '${name}' exists in multiple sources.`));
+          for (const match of matches) {
+            console.error(chalk.dim(`  Use: metis link ${match.id} -t ${projectPath} -p ${platform}`));
+          }
+        } else {
+          console.error(chalk.red(`Error: Skill '${name}' not found.`));
+        }
         process.exit(1);
       }
-      const skillsDir = ensureSkillsDir(projectPath, platform);
-      const linkPath = join(skillsDir, name!);
+      const skillsDir = getInitializedSkillsDir(projectPath, platform);
+      if (!skillsDir) {
+        printInitRequired(projectPath, platform);
+        process.exit(1);
+      }
+      const linkPath = join(skillsDir, entry.name);
       if (existsSync(linkPath)) {
         console.log(chalk.yellow(`⚠ ${linkPath} already exists.`));
         return;
       }
       createSymlink(resolve(getSkillsDir(), entry.installPath), linkPath);
-      registry.addLinkedProject(name!, projectPath);
-      console.log(chalk.green(`✓ Linked '${name}' → ${linkPath}`));
+      registry.addLinkedProject(entry.id, projectPath);
+      console.log(chalk.green(`✓ Linked '${entry.id}' → ${linkPath}`));
       console.log(chalk.dim(`  The skill is now available in this project (${platform}).`));
     });
 
@@ -143,22 +166,22 @@ export function registerLinkCommand(program: Command): void {
         const linkedHere = new Set<string>();
         for (const s of registry.list()) {
           if (s.linkedProjects.includes(projectPath) || isSymlink(join(skillsDir, s.name))) {
-            linkedHere.add(s.name);
+            linkedHere.add(s.id);
           }
         }
 
         const allSkills = registry.list();
         if (allSkills.length === 0) {
-          console.log(chalk.dim('No skills installed.'));
+        console.log(chalk.dim('No skills found.'));
           return;
         }
 
         const options = allSkills.map(s => {
-          const isLinked = linkedHere.has(s.name);
+          const isLinked = linkedHere.has(s.id);
           const status = isLinked ? '' : chalk.gray(' (not linked)');
           return {
-            name: `${s.name} ${chalk.dim(`(${s.source})`)}${status}`,
-            value: s.name,
+            name: `${s.name} ${chalk.dim(`(${s.id})`)}${status}`,
+            value: s.id,
             description: s.description,
           };
         });
@@ -177,16 +200,17 @@ export function registerLinkCommand(program: Command): void {
             skipped++;
             console.log(chalk.dim(`  ⏭ ${skillName} (not linked)`));
           } else {
-            const linkPath = join(skillsDir, skillName);
+            const entry = new Registry().get(skillName);
+            const linkPath = join(skillsDir, entry?.name ?? skillName);
             if (isSymlink(linkPath)) {
               removeSymlink(linkPath);
               const r = new Registry();
-              r.removeLinkedProject(skillName, projectPath);
+              r.removeLinkedProject(entry?.id ?? skillName, projectPath);
               console.log(chalk.green(`  ✓ Unlinked '${skillName}'`));
             } else {
               console.log(chalk.yellow(`  ⚠ '${skillName}' symlink not found, registry cleaned.`));
               const r = new Registry();
-              r.removeLinkedProject(skillName, projectPath);
+              r.removeLinkedProject(entry?.id ?? skillName, projectPath);
             }
           }
         }
@@ -197,14 +221,28 @@ export function registerLinkCommand(program: Command): void {
       }
 
       // Direct unlink
-      const linkPath = join(skillsDir, name!);
+      const entry = new Registry().get(name!);
+      if (!entry) {
+        const matches = new Registry().findByName(name!);
+        if (matches.length > 1) {
+          console.error(chalk.red(`Error: Skill '${name}' exists in multiple sources.`));
+          for (const match of matches) {
+            console.error(chalk.dim(`  Use: metis unlink ${match.id} -f ${projectPath} -p ${platform}`));
+          }
+        } else {
+          console.error(chalk.red(`Error: Skill '${name}' not found.`));
+        }
+        process.exit(1);
+      }
+      const skillName = entry?.name ?? name!;
+      const linkPath = join(skillsDir, skillName);
       if (!isSymlink(linkPath)) {
         console.error(chalk.red(`Error: '${name}' is not linked in ${projectPath} (${platform}).`));
         process.exit(1);
       }
       removeSymlink(linkPath);
       const registry = new Registry();
-      registry.removeLinkedProject(name!, projectPath);
+      registry.removeLinkedProject(entry.id, projectPath);
       console.log(chalk.green(`✓ Unlinked '${name}' from ${projectPath}`));
     });
 
@@ -212,17 +250,19 @@ export function registerLinkCommand(program: Command): void {
     .command('linked [name]')
     .description('Show which projects are linked to a skill, or all links')
     .option('--clean', 'Remove stale links (projects that no longer exist)')
-    .action(async (name?: string, opts?: { clean?: boolean }) => {
+    .option('-p, --platform <platform>', 'Target platform: claude-code (default) or codex', 'claude-code')
+    .action(async (name?: string, opts?: { clean?: boolean; platform?: string }) => {
       const registry = new Registry();
       let cleaned = 0;
+      const platform = (opts?.platform === 'codex' ? 'codex' : 'claude-code') as Platform;
 
-      const showLinks = (skillName: string, projects: string[]) => {
+      const showLinks = (entry: { id: string; name: string }, projects: string[]) => {
         for (const p of projects) {
-          const stale = !existsSync(p) || !existsSync(join(p, '.claude', 'skills', skillName));
+          const stale = !existsSync(p) || !existsSync(join(resolveSkillsDir(p, platform), entry.name));
           const marker = stale ? chalk.red(' (stale)') : '';
-          console.log(`  ${chalk.bold(skillName)} → ${p}${marker}`);
+          console.log(`  ${chalk.bold(entry.id)} → ${p}${marker}`);
           if (stale && opts?.clean) {
-            registry.removeLinkedProject(skillName, p);
+            registry.removeLinkedProject(entry.id, p);
             cleaned++;
           }
         }
@@ -231,13 +271,13 @@ export function registerLinkCommand(program: Command): void {
       if (name) {
         const entry = registry.get(name);
         if (!entry) {
-          console.error(chalk.red(`Error: Skill '${name}' is not installed.`));
+          console.error(chalk.red(`Error: Skill '${name}' not found.`));
           process.exit(1);
         }
         if (entry.linkedProjects.length === 0) {
           console.log(chalk.dim(`'${name}' is not linked to any project.`));
         } else {
-          showLinks(name, entry.linkedProjects);
+          showLinks(entry, entry.linkedProjects);
         }
         if (cleaned > 0) console.log(chalk.green(`Cleaned ${cleaned} stale link(s).`));
         return;
@@ -248,7 +288,7 @@ export function registerLinkCommand(program: Command): void {
       for (const s of skills) {
         if (s.linkedProjects.length > 0) {
           hasLinks = true;
-          showLinks(s.name, s.linkedProjects);
+          showLinks(s, s.linkedProjects);
         }
       }
       if (!hasLinks) {

@@ -14,15 +14,22 @@ export function registerInfoCommand(program: Command): void {
       const registry = new Registry();
       const entry = registry.get(name);
       if (!entry) {
-        console.error(chalk.red(`Error: Skill '${name}' is not installed.`));
+        const matches = registry.findByName(name);
+        if (matches.length > 1) {
+          console.error(chalk.red(`Error: Skill '${name}' exists in multiple sources.`));
+          for (const match of matches) {
+            console.error(chalk.dim(`  Use: metis info ${match.id}`));
+          }
+        } else {
+          console.error(chalk.red(`Error: Skill '${name}' not found.`));
+        }
         process.exit(1);
       }
 
       console.log(chalk.bold(`\n${entry.name}`));
       console.log(chalk.dim(`  Description: ${entry.description}`));
-      console.log(chalk.dim(`  Source:      ${entry.source} (${entry.sourceType})`));
-      console.log(chalk.dim(`  Version:     ${entry.version}`));
-      console.log(chalk.dim(`  Installed:   ${entry.installedAt}`));
+      console.log(chalk.dim(`  ID:          ${entry.id}`));
+      console.log(chalk.dim(`  Source:      ${entry.source}`));
       console.log(chalk.dim(`  Updated:     ${entry.updatedAt}`));
 
       if (entry.sourceUrl) {

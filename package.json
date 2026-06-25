@@ -8,8 +8,9 @@
     "metis": "./bin/metis"
   },
   "scripts": {
+    "build": "tsc && node scripts/build-bin.mjs",
     "dev": "npx tsx src/cli.ts",
-    "test": "node --import tsx --test src/**/*.test.ts",
+    "test": "node --import tsx --test \"src/**/*.test.ts\"",
     "typecheck": "npx tsc --noEmit"
   },
   "dependencies": {

@@ -20,13 +20,12 @@ describe('Registry', () => {
     const file = join(tmpDir, 'test-registry.json');
     const reg = new Registry(file);
     const entry: SkillEntry = {
+      id: 'superpowers/test-skill',
       name: 'test-skill',
       description: 'A test skill',
       source: 'superpowers',
-      sourceType: 'marketplace',
+      sourceUrl: 'https://example.com/superpowers.git',
       installPath: 'skills/superpowers/test-skill',
-      version: '1.0.0',
-      installedAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
       linkedProjects: [],
     };
@@ -34,22 +33,22 @@ describe('Registry', () => {
     const found = reg.get('test-skill');
     assert.ok(found);
     assert.equal(found!.name, 'test-skill');
-    assert.equal(found!.sourceType, 'marketplace');
+    assert.equal(found!.sourceUrl, 'https://example.com/superpowers.git');
     assert.deepEqual(found!.linkedProjects, []);
   });
 
   it('lists all skills', () => {
     const file = join(tmpDir, 'test-registry2.json');
     const reg = new Registry(file);
-    reg.add({ name: 'a', description: '', source: 'x', sourceType: 'marketplace', installPath: 'p', version: '1', installedAt: '', updatedAt: '', linkedProjects: [] });
-    reg.add({ name: 'b', description: '', source: 'x', sourceType: 'marketplace', installPath: 'p', version: '1', installedAt: '', updatedAt: '', linkedProjects: [] });
+    reg.add({ id: 'x/a', name: 'a', description: '', source: 'x', sourceUrl: 'url', installPath: 'p', updatedAt: '', linkedProjects: [] });
+    reg.add({ id: 'x/b', name: 'b', description: '', source: 'x', sourceUrl: 'url', installPath: 'p', updatedAt: '', linkedProjects: [] });
     assert.equal(reg.list().length, 2);
   });
 
   it('removes a skill', () => {
     const file = join(tmpDir, 'test-registry3.json');
     const reg = new Registry(file);
-    reg.add({ name: 'to-remove', description: '', source: 'x', sourceType: 'marketplace', installPath: 'p', version: '1', installedAt: '', updatedAt: '', linkedProjects: [] });
+    reg.add({ id: 'x/to-remove', name: 'to-remove', description: '', source: 'x', sourceUrl: 'url', installPath: 'p', updatedAt: '', linkedProjects: [] });
     reg.remove('to-remove');
     assert.equal(reg.get('to-remove'), undefined);
   });
@@ -57,7 +56,7 @@ describe('Registry', () => {
   it('addLinkedProject and removeLinkedProject', () => {
     const file = join(tmpDir, 'test-registry4.json');
     const reg = new Registry(file);
-    reg.add({ name: 'linked-skill', description: '', source: 'x', sourceType: 'marketplace', installPath: 'p', version: '1', installedAt: '', updatedAt: '', linkedProjects: [] });
+    reg.add({ id: 'x/linked-skill', name: 'linked-skill', description: '', source: 'x', sourceUrl: 'url', installPath: 'p', updatedAt: '', linkedProjects: [] });
     reg.addLinkedProject('linked-skill', '/projects/myapp');
     const entry = reg.get('linked-skill');
     assert.deepEqual(entry!.linkedProjects, ['/projects/myapp']);
@@ -68,8 +67,31 @@ describe('Registry', () => {
   it('persists to disk', () => {
     const file = join(tmpDir, 'test-registry5.json');
     const reg1 = new Registry(file);
-    reg1.add({ name: 'persist', description: '', source: 'x', sourceType: 'marketplace', installPath: 'p', version: '1', installedAt: '', updatedAt: '', linkedProjects: [] });
+    reg1.add({ id: 'x/persist', name: 'persist', description: '', source: 'x', sourceUrl: 'url', installPath: 'p', updatedAt: '', linkedProjects: [] });
     const reg2 = new Registry(file);
     assert.ok(reg2.get('persist'));
+  });
+
+  it('renames a source and rewrites skill ids and install paths', () => {
+    const file = join(tmpDir, 'test-registry6.json');
+    const reg = new Registry(file);
+    reg.add({
+      id: 'old/alpha',
+      name: 'alpha',
+      description: '',
+      source: 'old',
+      sourceUrl: 'url',
+      installPath: 'old/skills/alpha',
+      updatedAt: '',
+      linkedProjects: ['/project'],
+    });
+
+    const renamed = reg.renameSource('old', 'new');
+
+    assert.equal(renamed.length, 1);
+    assert.equal(reg.getExact('old/alpha'), undefined);
+    assert.equal(reg.getExact('new/alpha')!.source, 'new');
+    assert.equal(reg.getExact('new/alpha')!.installPath, 'new/skills/alpha');
+    assert.deepEqual(reg.getExact('new/alpha')!.linkedProjects, ['/project']);
   });
 });

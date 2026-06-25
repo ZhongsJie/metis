@@ -1,11 +1,12 @@
 node_modules/
 dist/
 .sources/
-# Ignore installed skills but track the registry
+sources.json
+# Ignore legacy in-repo data locations
 skills/
-!skills/.registry.json
 .env
 .DS_Store
 *.tsbuildinfo
 *.log
 .claude/
+bin/

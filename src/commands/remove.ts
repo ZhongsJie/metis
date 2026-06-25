@@ -1,16 +1,21 @@
 import { Command } from 'commander';
 import chalk from 'chalk';
 import { Registry } from '../registry.js';
-import { getSkillsDir } from '../sources/config.js';
-import { existsSync, rmSync, readdirSync } from 'node:fs';
-import { resolve } from 'node:path';
 import { selectFromList } from '../utils/interactive.js';
 
 async function doRemove(name: string, force?: boolean) {
   const registry = new Registry();
   const entry = registry.get(name);
   if (!entry) {
-    console.error(chalk.red(`Error: Skill '${name}' is not installed.`));
+    const matches = registry.findByName(name);
+    if (matches.length > 1) {
+      console.error(chalk.red(`Error: Skill '${name}' exists in multiple sources.`));
+      for (const match of matches) {
+        console.error(chalk.dim(`  Use: metis remove ${match.id}`));
+      }
+    } else {
+      console.error(chalk.red(`Error: Skill '${name}' not found.`));
+    }
     return;
   }
 
@@ -24,29 +29,15 @@ async function doRemove(name: string, force?: boolean) {
     return;
   }
 
-  const skillPath = resolve(getSkillsDir(), entry.installPath);
-  if (existsSync(skillPath)) {
-    rmSync(skillPath, { recursive: true, force: true });
-  }
-
-  if (entry.sourceType === 'marketplace') {
-    const parentDir = resolve(getSkillsDir(), entry.source);
-    try {
-      const remaining = readdirSync(parentDir).filter(f => f !== '.registry.json' && !f.startsWith('.'));
-      if (remaining.length === 0) {
-        rmSync(parentDir, { recursive: true, force: true });
-      }
-    } catch {}
-  }
-
-  registry.remove(name);
-  console.log(chalk.green(`✓ Removed '${name}'.`));
+  registry.remove(entry.id);
+  console.log(chalk.green(`✓ Removed '${entry.id}' from registry.`));
+  console.log(chalk.dim(`  Source files remain in ~/.metis/skills/${entry.source}. Use "metis source remove ${entry.source}" to remove the repository.`));
 }
 
 export function registerRemoveCommand(program: Command): void {
   program
     .command('remove [name]')
-    .description('Remove an installed skill (use -i for interactive selection)')
+    .description('Remove a discovered skill from the registry (use source remove to delete repositories)')
     .option('-i, --interactive', 'Interactive selection mode')
     .option('-f, --force', 'Force removal even if linked')
     .action(async (name: string | undefined, opts: { interactive?: boolean; force?: boolean }) => {
@@ -56,13 +47,13 @@ export function registerRemoveCommand(program: Command): void {
         const skills = registry.list();
 
         if (skills.length === 0) {
-          console.log(chalk.dim('No skills installed.'));
+          console.log(chalk.dim('No skills found.'));
           return;
         }
 
         const options = skills.map(s => ({
-          name: `${s.name} ${chalk.dim(`(${s.source})`)}${s.linkedProjects.length > 0 ? chalk.green(` · linked to ${s.linkedProjects.length} project(s)`) : ''}`,
-          value: s.name,
+          name: `${s.name} ${chalk.dim(`(${s.id})`)}${s.linkedProjects.length > 0 ? chalk.green(` · linked to ${s.linkedProjects.length} project(s)`) : ''}`,
+          value: s.id,
           description: s.description,
         }));
 

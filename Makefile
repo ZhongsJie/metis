@@ -1,4 +1,4 @@
-.PHONY: install dev test typecheck clean help link unlink
+.PHONY: install build dev test typecheck clean help link unlink
 
 SHELL := /bin/bash
 BIN := ./bin/metis
@@ -8,6 +8,9 @@ help: ## Show this help
 
 install: ## Install npm dependencies
 	npm install
+
+build: ## Compile TypeScript to dist/
+	npm run build
 
 dev: ## Run CLI in development mode (pass args via ARGS="...")
 	npx tsx src/cli.ts $(ARGS)
@@ -19,7 +22,7 @@ typecheck: ## TypeScript type checking
 	npx tsc --noEmit
 
 clean: ## Remove installed skills and cached sources
-	rm -rf skills/*/ .sources/*/ skills/.registry.json sources.json
+	rm -rf "$(HOME)/.metis/skills" "$(HOME)/.metis/registry.json" "$(HOME)/.metis/sources.json"
 	@echo "Cleaned skills and sources"
 
 list: ## List installed skills

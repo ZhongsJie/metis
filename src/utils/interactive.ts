@@ -1,4 +1,4 @@
-import { checkbox } from '@inquirer/prompts';
+import { checkbox, select } from '@inquirer/prompts';
 import { createInterface } from 'node:readline';
 import chalk from 'chalk';
 
@@ -44,7 +44,7 @@ export async function selectFromList(
     .map(s => parseInt(s.trim(), 10) - 1)
     .filter(i => i >= 0 && i < options.length);
 
-  return indices.map(i => options[i]?.name).filter((n): n is string => !!n);
+  return indices.map(i => options[i]?.value ?? options[i]?.name).filter((n): n is string => !!n);
 }
 
 /**
@@ -68,6 +68,29 @@ export async function checkboxSelect(
   }));
 
   return checkbox({
+    message,
+    choices,
+    pageSize: 15,
+  });
+}
+
+export async function selectOne(
+  options: SelectOption[],
+  message: string,
+): Promise<string | undefined> {
+  if (options.length === 0) {
+    console.log(chalk.dim('Nothing to select.'));
+    return undefined;
+  }
+
+  const choices = options.map(o => ({
+    name: o.name,
+    value: o.value ?? o.name,
+    description: o.description,
+    disabled: o.disabled || false,
+  }));
+
+  return select({
     message,
     choices,
     pageSize: 15,
