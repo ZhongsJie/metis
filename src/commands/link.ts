@@ -32,8 +32,8 @@ export function registerLinkCommand(program: Command): void {
   program
     .command('link <name>')
     .description('Link a skill into a project')
-    .option('--to <path>', 'Target project path (defaults to cwd)')
-    .option('--platform <platform>', 'Target platform: claude-code (default) or codex', 'claude-code')
+    .option('-t, --to <path>', 'Target project path (defaults to cwd)')
+    .option('-p, --platform <platform>', 'Target platform: claude-code (default) or codex', 'claude-code')
     .action(async (name: string, opts: { to?: string; platform: string }) => {
       const platform = (opts.platform === 'codex' ? 'codex' : 'claude-code') as Platform;
       const registry = new Registry();
@@ -62,8 +62,8 @@ export function registerLinkCommand(program: Command): void {
   program
     .command('unlink <name>')
     .description('Unlink a skill from a project')
-    .option('--from <path>', 'Target project path (defaults to cwd)')
-    .option('--platform <platform>', 'Target platform: claude-code (default) or codex', 'claude-code')
+    .option('-f, --from <path>', 'Target project path (defaults to cwd)')
+    .option('-p, --platform <platform>', 'Target platform: claude-code (default) or codex', 'claude-code')
     .action(async (name: string, opts: { from?: string; platform: string }) => {
       const platform = (opts.platform === 'codex' ? 'codex' : 'claude-code') as Platform;
       const registry = new Registry();

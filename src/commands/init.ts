@@ -15,7 +15,7 @@ export function registerInitCommand(program: Command): void {
   program
     .command('init [project-path]')
     .description('Initialize skills directory in a project')
-    .option('--platform <platform>', 'Target platform: claude-code (default) or codex', 'claude-code')
+    .option('-p, --platform <platform>', 'Target platform: claude-code (default) or codex', 'claude-code')
     .action(async (projectPath?: string, opts?: { platform: string }) => {
       const platform = (opts?.platform === 'codex' ? 'codex' : 'claude-code') as Platform;
       const target = resolve(projectPath ?? process.cwd());
