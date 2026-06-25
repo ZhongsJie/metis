@@ -6,7 +6,7 @@ import { createSymlink, removeSymlink, isSymlink } from '../utils/symlink.js';
 import { ensureDir, writeJson } from '../utils/fs.js';
 import { existsSync } from 'node:fs';
 import { resolve, join } from 'node:path';
-import { selectFromList } from '../utils/interactive.js';
+import { checkboxSelect } from '../utils/interactive.js';
 
 type Platform = 'claude-code' | 'codex';
 
@@ -61,7 +61,6 @@ export function registerLinkCommand(program: Command): void {
       // Interactive mode: show installed skills not yet linked
       if (opts.interactive || !name) {
         const registry = new Registry();
-        const skillsDir = resolveSkillsDir(projectPath, platform);
         const linkedHere = new Set<string>();
         for (const s of registry.list()) {
           if (s.linkedProjects.includes(projectPath)) {
@@ -77,13 +76,10 @@ export function registerLinkCommand(program: Command): void {
 
         const options = available.map(s => ({
           name: s.name,
-          description: `(${s.source}) ${s.description.slice(0, 50)}`,
+          description: `${s.source} — ${s.description.slice(0, 60)}`,
         }));
 
-        const selected = await selectFromList(options, {
-          prompt: 'Select skill(s) to link',
-          allowMultiple: true,
-        });
+        const selected = await checkboxSelect(options, 'Select skills to link');
 
         if (selected.length === 0) {
           console.log(chalk.dim('Cancelled.'));
@@ -141,13 +137,10 @@ export function registerLinkCommand(program: Command): void {
 
         const options = linkedSkills.map(s => ({
           name: s.name,
-          description: `(${s.source}) ${s.description.slice(0, 50)}`,
+          description: `${s.source} — ${s.description.slice(0, 60)}`,
         }));
 
-        const selected = await selectFromList(options, {
-          prompt: 'Select skill(s) to unlink',
-          allowMultiple: true,
-        });
+        const selected = await checkboxSelect(options, 'Select skills to unlink');
 
         if (selected.length === 0) {
           console.log(chalk.dim('Cancelled.'));

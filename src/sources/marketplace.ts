@@ -1,5 +1,5 @@
 import { SourceHandler, AvailableSkill, SkillSource } from './index.js';
-import { ensureDir, resolvePath } from '../utils/fs.js';
+import { ensureDir } from '../utils/fs.js';
 import { createSymlink } from '../utils/symlink.js';
 import { parseSkillFile } from '../utils/skill-parser.js';
 import { existsSync, readdirSync, readFileSync } from 'node:fs';

@@ -14,9 +14,10 @@ description: Use before any creative work
 Some content here.`;
 
     const result = parseSkillFile(content);
-    assert.equal(result.name, 'brainstorming');
-    assert.equal(result.description, 'Use before any creative work');
-    assert.ok(result.body.includes('# Brainstorming'));
+    assert.ok(result);
+    assert.equal(result!.name, 'brainstorming');
+    assert.equal(result!.description, 'Use before any creative work');
+    assert.ok(result!.body.includes('# Brainstorming'));
   });
 
   it('returns null for file without frontmatter', () => {
@@ -40,7 +41,8 @@ name: minimal
 description: Just frontmatter
 ---`;
     const result = parseSkillFile(content);
-    assert.equal(result.name, 'minimal');
-    assert.equal(result.body, '');
+    assert.ok(result);
+    assert.equal(result!.name, 'minimal');
+    assert.equal(result!.body, '');
   });
 });

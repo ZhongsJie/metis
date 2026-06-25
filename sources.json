@@ -1,0 +1,17 @@
+{
+  "version": 1,
+  "sources": {
+    "superpowers": {
+      "name": "superpowers",
+      "type": "marketplace",
+      "url": "https://github.com/obra/superpowers.git",
+      "addedAt": "2026-06-25T09:15:00.018Z"
+    },
+    "minimax": {
+      "name": "minimax",
+      "type": "marketplace",
+      "url": "git@github.com:MiniMax-AI/skills.git",
+      "addedAt": "2026-06-25T09:41:30.782Z"
+    }
+  }
+}
