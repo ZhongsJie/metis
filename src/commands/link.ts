@@ -211,8 +211,22 @@ export function registerLinkCommand(program: Command): void {
   program
     .command('linked [name]')
     .description('Show which projects are linked to a skill, or all links')
-    .action(async (name?: string) => {
+    .option('--clean', 'Remove stale links (projects that no longer exist)')
+    .action(async (name?: string, opts?: { clean?: boolean }) => {
       const registry = new Registry();
+      let cleaned = 0;
+
+      const showLinks = (skillName: string, projects: string[]) => {
+        for (const p of projects) {
+          const stale = !existsSync(p) || !existsSync(join(p, '.claude', 'skills', skillName));
+          const marker = stale ? chalk.red(' (stale)') : '';
+          console.log(`  ${chalk.bold(skillName)} → ${p}${marker}`);
+          if (stale && opts?.clean) {
+            registry.removeLinkedProject(skillName, p);
+            cleaned++;
+          }
+        }
+      };
 
       if (name) {
         const entry = registry.get(name);
@@ -223,10 +237,9 @@ export function registerLinkCommand(program: Command): void {
         if (entry.linkedProjects.length === 0) {
           console.log(chalk.dim(`'${name}' is not linked to any project.`));
         } else {
-          for (const p of entry.linkedProjects) {
-            console.log(`  ${chalk.bold(name)} → ${p}`);
-          }
+          showLinks(name, entry.linkedProjects);
         }
+        if (cleaned > 0) console.log(chalk.green(`Cleaned ${cleaned} stale link(s).`));
         return;
       }
 
@@ -235,13 +248,12 @@ export function registerLinkCommand(program: Command): void {
       for (const s of skills) {
         if (s.linkedProjects.length > 0) {
           hasLinks = true;
-          for (const p of s.linkedProjects) {
-            console.log(`  ${chalk.bold(s.name)} → ${p}`);
-          }
+          showLinks(s.name, s.linkedProjects);
         }
       }
       if (!hasLinks) {
         console.log(chalk.dim('No skills are linked to any project.'));
       }
+      if (cleaned > 0) console.log(chalk.green(`\nCleaned ${cleaned} stale link(s).`));
     });
 }
