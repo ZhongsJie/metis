@@ -5,6 +5,7 @@ import chalk from 'chalk';
 export interface SelectOption {
   name: string;
   description: string;
+  disabled?: boolean;
 }
 
 /**
@@ -62,6 +63,7 @@ export async function checkboxSelect(
     name: o.name,
     value: o.name,
     description: o.description,
+    disabled: o.disabled || false,
   }));
 
   return checkbox({

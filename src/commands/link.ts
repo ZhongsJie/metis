@@ -68,16 +68,20 @@ export function registerLinkCommand(program: Command): void {
           }
         }
 
-        const available = registry.list().filter(s => !linkedHere.has(s.name));
-        if (available.length === 0) {
-          console.log(chalk.dim('All installed skills are already linked to this project.'));
+        const allSkills = registry.list();
+        if (allSkills.length === 0) {
+          console.log(chalk.dim('No skills installed. Use "skill install <name>" first.'));
           return;
         }
 
-        const options = available.map(s => ({
-          name: s.name,
-          description: `${s.source} — ${s.description.slice(0, 60)}`,
-        }));
+        const options = allSkills.map(s => {
+          const isLinked = linkedHere.has(s.name);
+          return {
+            name: isLinked ? `${s.name}` : s.name,
+            description: `${s.source} — ${s.description.slice(0, 50)}${isLinked ? ' (linked)' : ''}`,
+            disabled: isLinked,
+          };
+        });
 
         const selected = await checkboxSelect(options, 'Select skills to link');
 
@@ -126,19 +130,27 @@ export function registerLinkCommand(program: Command): void {
       // Interactive mode: show skills linked to this project
       if (opts.interactive || !name) {
         const registry = new Registry();
-        const linkedSkills = registry.list().filter(s =>
-          s.linkedProjects.includes(projectPath) || isSymlink(join(skillsDir, s.name))
-        );
+        const linkedHere = new Set<string>();
+        for (const s of registry.list()) {
+          if (s.linkedProjects.includes(projectPath) || isSymlink(join(skillsDir, s.name))) {
+            linkedHere.add(s.name);
+          }
+        }
 
-        if (linkedSkills.length === 0) {
-          console.log(chalk.dim('No skills linked to this project.'));
+        const allSkills = registry.list();
+        if (allSkills.length === 0) {
+          console.log(chalk.dim('No skills installed.'));
           return;
         }
 
-        const options = linkedSkills.map(s => ({
-          name: s.name,
-          description: `${s.source} — ${s.description.slice(0, 60)}`,
-        }));
+        const options = allSkills.map(s => {
+          const isLinked = linkedHere.has(s.name);
+          return {
+            name: s.name,
+            description: `${s.source} — ${s.description.slice(0, 50)}${isLinked ? '' : ' (not linked)'}`,
+            disabled: !isLinked,
+          };
+        });
 
         const selected = await checkboxSelect(options, 'Select skills to unlink');
 
