@@ -4,14 +4,23 @@ import { ensureDir, writeJson } from '../utils/fs.js';
 import { resolve, join } from 'node:path';
 import { existsSync } from 'node:fs';
 
+type Platform = 'claude-code' | 'codex';
+
+const PLATFORM_DIRS: Record<Platform, string> = {
+  'claude-code': '.claude',
+  'codex': '.codex',
+};
+
 export function registerInitCommand(program: Command): void {
   program
     .command('init [project-path]')
-    .description('Initialize .claude/skills/ directory in a project')
-    .action(async (projectPath?: string) => {
+    .description('Initialize skills directory in a project')
+    .option('--platform <platform>', 'Target platform: claude-code (default) or codex', 'claude-code')
+    .action(async (projectPath?: string, opts?: { platform: string }) => {
+      const platform = (opts?.platform === 'codex' ? 'codex' : 'claude-code') as Platform;
       const target = resolve(projectPath ?? process.cwd());
-      const claudeDir = join(target, '.claude');
-      const skillsDir = join(claudeDir, 'skills');
+      const platformDir = join(target, PLATFORM_DIRS[platform]);
+      const skillsDir = join(platformDir, 'skills');
 
       if (existsSync(skillsDir)) {
         console.log(chalk.yellow(`⚠ ${skillsDir} already exists.`));
@@ -19,11 +28,9 @@ export function registerInitCommand(program: Command): void {
       }
 
       ensureDir(skillsDir);
+      writeJson(join(platformDir, 'skills.json'), { skills: [] });
 
-      // Create skills.json to track selected skills
-      writeJson(join(claudeDir, 'skills.json'), { skills: [] });
-
-      console.log(chalk.green(`✓ Initialized ${skillsDir}`));
-      console.log(chalk.dim(`  Run 'skill link <name> --to ${target}' to add skills.`));
+      console.log(chalk.green(`✓ Initialized ${skillsDir} (${platform})`));
+      console.log(chalk.dim(`  Run 'skill link <name> --to ${target} --platform ${platform}' to add skills.`));
     });
 }
