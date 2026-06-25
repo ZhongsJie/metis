@@ -5,71 +5,82 @@
 
 ## Context
 
-当前 Claude Code 的技能完全通过插件系统全局安装（`~/.claude/plugins/cache/`），不能在项目级别按需选择。本项目目标是：
+Claude Code currently loads skills globally through the plugin system (`~/.claude/plugins/cache/`), with no per-project selection. This project:
 
-1. 建立一个本地 skill 仓库，支持从 Git 仓库和 Claude Code 市场下载 skill
-2. 通过 CLI 工具管理 skill 的安装、搜索、更新、移除
-3. 在目标项目中通过 `.claude/skills/` 软链实现项目级别的 skill 选择
+1. Creates a local skill repository with install support from Git repos and Claude Code marketplaces
+2. Provides a CLI tool for skill management (install, search, update, remove)
+3. Enables per-project skill selection via `.claude/skills/` symlinks
 
 ## Architecture
 
-### 项目结构
+### Project Structure
 
 ```
-skills/                              # 本项目根目录
-├── package.json                     # npm 包定义 + CLI bin 入口
+skills/                              # This repo (skill manager)
+├── package.json                     # npm package + CLI bin entry
 ├── tsconfig.json
+├── Makefile
 ├── README.md
 ├── bin/
-│   └── skill                        # CLI 入口（#!/usr/bin/env node）
+│   └── skill                        # CLI entry point (#!/usr/bin/env bash)
 ├── src/
-│   ├── cli.ts                       # Commander 主程序，注册所有子命令
-│   ├── registry.ts                  # .registry.json 读写、校验
+│   ├── cli.ts                       # Commander.js main, registers all commands
+│   ├── registry.ts                  # .registry.json read/write/validate
 │   ├── sources/
-│   │   ├── index.ts                 # 源接口定义 + 路由器
-│   │   ├── marketplace.ts           # Claude Code 市场源
-│   │   └── git.ts                   # Git 仓库源
+│   │   ├── index.ts                 # Source interface + router
+│   │   ├── marketplace.ts           # Marketplace source handler
+│   │   ├── git.ts                   # Git source handler
+│   │   └── config.ts                # sources.json management
 │   ├── commands/
+│   │   ├── init.ts
+│   │   ├── source.ts
 │   │   ├── install.ts
 │   │   ├── list.ts
 │   │   ├── search.ts
 │   │   ├── info.ts
 │   │   ├── remove.ts
 │   │   ├── update.ts
-│   │   ├── link.ts
-│   │   ├── unlink.ts
-│   │   └── init.ts
+│   │   └── link.ts
 │   └── utils/
-│       ├── skill-parser.ts          # 解析 SKILL.md frontmatter
-│       ├── symlink.ts               # 跨平台软链操作
-│       └── fs.ts
-├── skills/                          # 已安装的 skill 存放目录
+│       ├── skill-parser.ts          # Parse SKILL.md frontmatter
+│       ├── symlink.ts               # Cross-platform symlink operations
+│       ├── fs.ts                    # Filesystem helpers
+│       └── interactive.ts           # Interactive selection UI
+├── skills/                          # Installed skills directory
 │   └── .registry.json
-├── .sources/                        # 源仓库的本地缓存
-└── sources.json                     # 配置的源列表
+├── .sources/                        # Cloned source repositories
+└── sources.json                     # Configured source list
 ```
 
-### CLI 命令
+### CLI Commands
 
-| 命令 | 功能 |
-|------|------|
-| `skill install <name>` | 从已配置源安装 skill |
-| `skill install <name> --from <url>` | 从指定 Git URL 安装 |
-| `skill list [--source <name>]` | 列出已安装的 skill |
-| `skill search <query>` | 搜索可用 skill |
-| `skill info <name>` | 查看 skill 详情 |
-| `skill remove <name>` | 移除 skill |
-| `skill update [<name>]` | 更新 skill |
-| `skill link <name> [--to <path>]` | 在目标项目创建软链 |
-| `skill unlink <name> [--from <path>]` | 移除项目软链 |
-| `skill linked [<name>]` | 查看链接状态 |
-| `skill init [<project-path>]` | 为项目初始化 `.claude/skills/` |
-| `skill source add <name> <url>` | 添加源 |
-| `skill source list` | 列出已配置源 |
-| `skill source remove <name>` | 移除源 |
-| `skill source update <name>` | 更新源仓库 |
+| Command | Description |
+|---------|-------------|
+| `skill install <name>` | Install a skill from configured sources |
+| `skill install <name> -s <url>` | Install directly from a Git URL |
+| `skill list [--source <name>]` | List installed skills |
+| `skill search <query>` | Search available skills across sources |
+| `skill info <name>` | Show skill details |
+| `skill remove <name>` | Remove a skill (with linked-project check) |
+| `skill update [<name>]` | Update skill(s) |
+| `skill link <name> [-t <path>]` | Link skill into project |
+| `skill unlink <name> [-f <path>]` | Unlink skill from project |
+| `skill linked [<name>]` | Show link status |
+| `skill init [<path>]` | Initialize `.claude/skills/` or `.codex/skills/` |
+| `skill source add <name> <url>` | Add a source |
+| `skill source list` | List sources |
+| `skill source remove <name>` | Remove a source |
+| `skill source update <name>` | Update source repository |
 
-### 数据格式
+### Interactive Mode
+
+| Command | Flag | Behavior |
+|---------|------|----------|
+| `skill remove` | `-i` | Checkbox select from installed skills |
+| `skill link` | `-i` | Checkbox select from available skills (linked ones shown with indicator) |
+| `skill unlink` | `-i` | Checkbox select from linked skills (not-linked ones shown with indicator) |
+
+### Data Formats
 
 #### `.registry.json`
 
@@ -82,7 +93,7 @@ skills/                              # 本项目根目录
       "description": "Use before any creative work...",
       "source": "superpowers",
       "sourceType": "marketplace",
-      "installPath": "skills/superpowers/brainstorming",
+      "installPath": "superpowers/brainstorming",
       "version": "6.0.3",
       "installedAt": "2026-06-25T10:30:00Z",
       "updatedAt": "2026-06-25T10:30:00Z",
@@ -108,55 +119,55 @@ skills/                              # 本项目根目录
 }
 ```
 
-#### 项目链接结构
+#### Project Link Structure
 
 ```
 ~/my-project/
-├── .claude/
-│   ├── skills/                      # skill init 创建
-│   │   ├── brainstorming -> ../../../../skills/skills/superpowers/brainstorming
-│   │   └── tdd -> ...
-│   └── skills.json                  # 记录选择的 skill
+└── .claude/
+    ├── skills/
+    │   ├── brainstorming → ~/skills/skills/superpowers/brainstorming
+    │   └── tdd → ~/skills/skills/superpowers/test-driven-development
+    └── skills.json
 ```
 
 ## Key Flows
 
-### 安装流程
+### Install Flow
 
-1. 遍历 `sources.json` 中所有源
-2. 对 marketplace 源：先确保源仓库已 clone 到 `.sources/<name>/`，扫描其 `skills/` 目录，解析 SKILL.md frontmatter 匹配 name，在 `skills/<source>/<name>/` 创建指向 `.sources/<name>/skills/<name>/` 的软链
-3. 对 git 源（独立 skill）：clone 到 `skills/<name>/`
-4. 写入 `.registry.json`
+1. Iterate `sources.json` sources
+2. Marketplace: ensure repo cloned to `.sources/<name>/`, scan `skills/` for SKILL.md, parse frontmatter to match name, create symlink `skills/<source>/<name>/` → `.sources/<source>/skills/<name>/`
+3. Git (single skill): clone to `skills/<name>/`
+4. Write `.registry.json`
 
-### Marketplace vs Git 源
+### Marketplace vs Git Sources
 
 | | Marketplace | Git |
 |---|---|---|
-| 存储方式 | 软链 → `.sources/<source>/skills/<name>/` | 直接存储在 `skills/<name>/` |
-| 更新方式 | `git pull` 整个源仓库（一次更新所有 skill） | 在 skill 目录内 `git pull` |
-| 示例路径 | `skills/superpowers/brainstorming/` → `.sources/superpowers/skills/brainstorming/` | `skills/my-custom-skill/` |
+| Storage | Symlink → `.sources/<source>/skills/<name>/` | Direct directory `skills/<name>/` |
+| Update | `git pull` entire source repo (all skills at once) | `git pull` in skill directory |
+| Path | `skills/superpowers/brainstorming/` | `skills/my-custom-skill/` |
 
-### 链接流程
+### Link Flow
 
-1. 验证 skill 已安装、目标项目 `.claude/` 存在（否则提示 `skill init`）
-2. `ln -s <absolute-path-to-skill> <project>/.claude/skills/<name>`
-3. 更新 registry 中 `linkedProjects`
+1. Verify skill installed, auto-create target directory if missing
+2. `ln -s <abs-path-to-skill> <project>/.claude/skills/<name>`
+3. Update registry `linkedProjects`
 
 ## Edge Cases
 
-| 场景 | 处理 |
-|------|------|
-| 安装同名 skill | 提示已存在，`--force` 覆盖 |
-| 移除已链接的 skill | 拒绝，列出链接项目，提示先 unlink |
-| unlink 后 skills/ 为空 | 保留空目录 |
-| 源仓库不可达 | 超时报错，不阻塞其他源 |
-| SKILL.md 格式无效 | 跳过并 warning |
-| 目标项目无 `.claude/` | link 时提示 `skill init` |
-| 跨文件系统软链 | 使用绝对路径 |
+| Scenario | Handling |
+|----------|----------|
+| Install duplicate skill | Warn, use `--force` to overwrite |
+| Remove linked skill | Reject, list linked projects, ask to unlink first |
+| Empty skills dir after unlink | Keep empty directory |
+| Source repo unreachable | Timeout, report source name, skip |
+| Invalid SKILL.md | Skip with warning |
+| Missing `.claude/` on link | Auto-create directory |
+| Cross-filesystem symlink | Always use absolute paths |
 
 ## Verification
 
-1. 单元测试：`skill-parser.ts`、`registry.ts`
-2. 集成测试：`install → link → list → unlink → remove` 完整流程
-3. 手动验证：安装 superpowers 中的 brainstorming，链接到测试项目，确认文件可读
-4. Claude Code 验证：确认 `.claude/skills/` 下的 skill 能被加载
+1. Unit tests: `skill-parser.ts`, `registry.ts`
+2. Integration test: `install → link → list → unlink → remove` full lifecycle
+3. Manual: install brainstorming from superpowers, link to test project, verify readable
+4. Claude Code: confirm `.claude/skills/` skills are discovered
