@@ -131,4 +131,4 @@ npm run typecheck              # TypeScript type checking
 
 ## License
 
-MIT
+Apache License 2.0. See [LICENSE](LICENSE).
