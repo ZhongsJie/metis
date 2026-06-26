@@ -9,12 +9,12 @@ Per-project skill manager for AI coding assistants — Claude Code, Codex, and m
 ## Setup
 
 ```bash
-git clone https://github.com/ZhongsJie/metis.git ~/Documents/Repository/skills
-cd ~/Documents/Repository/skills
+git clone https://github.com/ZhongsJie/metis.git ~/.metis/app
+cd ~/.metis/app
 npm install
 
 # Add to PATH (prepend so compiled bin takes priority)
-echo 'export PATH="$HOME/Documents/Repository/skills/bin:$PATH"' >> ~/.zshrc
+echo 'export PATH="$HOME/.metis/app/bin:$PATH"' >> ~/.zshrc
 source ~/.zshrc
 ```
 
