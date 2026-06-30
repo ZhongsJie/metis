@@ -147,8 +147,8 @@ const searchCheckboxPrompt = createPrompt<NormalizedChoice[], SearchCheckboxConf
 
     // ---- key handling ----
     useKeypress((key, rl) => {
-      // Some terminal events (e.g. mouse) have no key name
       if (!key.name) return;
+
       // Enter → confirm
       if (isEnterKey(key)) {
         const selected = allItems.filter(i => i.checked && !i.disabled);
@@ -164,39 +164,27 @@ const searchCheckboxPrompt = createPrompt<NormalizedChoice[], SearchCheckboxConf
         return;
       }
 
-      // Backspace → remove last char from search
-      if (key.name === 'backspace') {
-        // Readline's line tracks user input; sync our state to it minus 1
-        rl.clearLine(0);
-        const next = search.slice(0, -1);
-        setSearch(next);
-        if (next) rl.write(next);
-        setCursor(0);
+      // Ctrl+A → toggle all visible
+      if (key.name === 'a' && key.ctrl) {
+        const allChecked = filtered
+          .filter(i => !i.disabled)
+          .every(i => allItems.find(o => o.value === i.value)?.checked);
+        const visibleValues = new Set(filtered.map(i => i.value));
+        setAllItems(
+          allItems.map(item =>
+            visibleValues.has(item.value) && !item.disabled
+              ? { ...item, checked: !allChecked }
+              : item,
+          ),
+        );
         return;
       }
 
-      // Up
-      if (isUpKey(key)) {
-        rl.clearLine(0);
-        if (search) rl.write(search);
-        setCursor(Math.max(0, cursor - 1));
-        return;
-      }
-
-      // Down
-      if (isDownKey(key)) {
-        rl.clearLine(0);
-        if (search) rl.write(search);
-        setCursor(Math.min(filtered.length - 1, cursor + 1));
-        return;
-      }
-
-      // Space → toggle current item
+      // Space → toggle current item (strip the space readline added)
       if (isSpaceKey(key)) {
         if (filtered.length > 0) {
           const target = filtered[safeCursor]!;
           if (!target.disabled) {
-            // Readline added a space — remove it
             rl.clearLine(0);
             if (search) rl.write(search);
             setAllItems(
@@ -211,54 +199,37 @@ const searchCheckboxPrompt = createPrompt<NormalizedChoice[], SearchCheckboxConf
         return;
       }
 
-      // Ctrl+A → toggle all visible
-      if (key.name === 'a' && key.ctrl) {
-        const allChecked = filtered
-          .filter(i => !i.disabled)
-          .every(i => {
-            const orig = allItems.find(o => o.value === i.value);
-            return orig?.checked;
-          });
-        const visibleValues = new Set(filtered.map(i => i.value));
-        setAllItems(
-          allItems.map(item =>
-            visibleValues.has(item.value) && !item.disabled
-              ? { ...item, checked: !allChecked }
-              : item,
-          ),
-        );
+      // Up / Down → navigate list; restore readline line so search text stays visible
+      if (isUpKey(key)) {
+        rl.clearLine(0);
+        if (search) rl.write(search);
+        setCursor(Math.max(0, cursor - 1));
+        return;
+      }
+      if (isDownKey(key)) {
+        rl.clearLine(0);
+        if (search) rl.write(search);
+        setCursor(Math.min(filtered.length - 1, cursor + 1));
         return;
       }
 
-      // Printable character → sync from readline line buffer
-      if (key.name.length === 1 && !key.ctrl) {
-        // Readline adds chars to its line buffer; read it
-        setSearch(rl.line);
-        setCursor(0);
-      }
+      // Default: sync search state from readline's native line buffer.
+      // Readline handles character insertion, backspace, cursor movement, etc.
+      setSearch(rl.line);
+      setCursor(0);
     });
 
     // ---- render ----
+    // Readline's line buffer displays the search input — do NOT render a
+    // second search bar here.  Only render the results list below.
     const message = theme.style.message(config.message, status);
-
-    // Search bar
-    let searchBar: string;
-    if (search) {
-      searchBar = `${chalk.cyan(search)}${chalk.inverse(' ')}`;
-    } else {
-      searchBar = `${chalk.inverse(' ')} ${chalk.dim('type to search')}`;
-    }
     const countHint = search ? chalk.dim(` — ${filtered.length}/${allItems.length}`) : '';
-
-    // Title line
-    let out = `${prefix} ${message}  ${searchBar}${countHint}\n`;
+    let out = `${prefix} ${message}${countHint}\n`;
 
     // Choices
-    if (filtered.length === 0) {
-      if (search) {
-        out += chalk.dim('  No matches.\n');
-      }
-    } else {
+    if (filtered.length === 0 && search) {
+      out += chalk.dim('  No matches.\n');
+    } else if (filtered.length > 0) {
       const page = usePagination({
         items: filtered,
         active: safeCursor,
