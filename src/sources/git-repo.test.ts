@@ -70,6 +70,19 @@ describe('git source scanning', () => {
     assert.deepEqual(skills.map(skill => skill.installPath).sort(), ['multi/skills/a', 'multi/skills/b']);
   });
 
+  it('detects skills under .claude/skills/* (Claude Code plugin layout)', () => {
+    const repo = join(tmpDir, 'claude-plugin');
+    mkdirSync(join(repo, '.claude', 'skills', 'x'), { recursive: true });
+    mkdirSync(join(repo, '.claude', 'skills', 'y'), { recursive: true });
+    writeFileSync(join(repo, '.claude', 'skills', 'x', 'SKILL.md'), skillMarkdown('plugin-a'));
+    writeFileSync(join(repo, '.claude', 'skills', 'y', 'SKILL.md'), skillMarkdown('plugin-b'));
+
+    const skills = scanSourceSkills(source('claude-plugin'), tmpDir);
+
+    assert.deepEqual(skills.map(skill => skill.id).sort(), ['claude-plugin/plugin-a', 'claude-plugin/plugin-b']);
+    assert.deepEqual(skills.map(skill => skill.installPath).sort(), ['claude-plugin/.claude/skills/x', 'claude-plugin/.claude/skills/y']);
+  });
+
   it('reuses an existing cloned repository at the standard source path', async () => {
     const repo = join(tmpDir, 'existing');
     mkdirSync(join(repo, '.git'), { recursive: true });

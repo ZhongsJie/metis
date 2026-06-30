@@ -97,6 +97,17 @@ export function scanSourceSkills(source: SkillSource, skillsDir: string): Availa
     }
   }
 
+  // Claude Code plugin layout: .claude/skills/*/SKILL.md
+  const claudeSkillsDir = join(repoPath, '.claude', 'skills');
+  if (existsSync(claudeSkillsDir)) {
+    for (const dir of readdirSync(claudeSkillsDir, { withFileTypes: true })) {
+      if (!dir.isDirectory()) continue;
+      if (existsSync(join(claudeSkillsDir, dir.name, 'SKILL.md'))) {
+        candidates.push(join('.claude', 'skills', dir.name));
+      }
+    }
+  }
+
   const seen = new Set<string>();
   const skills: AvailableSkill[] = [];
   for (const skillRelPath of candidates) {
