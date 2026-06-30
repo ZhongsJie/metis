@@ -74,6 +74,52 @@ export async function checkboxSelect(
   });
 }
 
+/**
+ * Interactive checkbox UI with optional search filter.
+ * Prompts for a search term first; only matching options are shown.
+ * Press Enter without typing to show all.
+ */
+export async function filteredCheckboxSelect(
+  options: SelectOption[],
+  message: string,
+): Promise<string[]> {
+  if (options.length === 0) {
+    console.log(chalk.dim('Nothing to select.'));
+    return [];
+  }
+
+  const filter = await ask(`${chalk.bold('Search')} (Enter for all): `);
+  const term = filter.toLowerCase().trim();
+
+  let filtered = options;
+  if (term) {
+    filtered = options.filter(
+      o =>
+        o.name.toLowerCase().includes(term) ||
+        o.description.toLowerCase().includes(term) ||
+        (o.value ?? '').toLowerCase().includes(term),
+    );
+    if (filtered.length === 0) {
+      console.log(chalk.yellow(`No skills match '${filter.trim()}'.`));
+      return [];
+    }
+    console.log(chalk.dim(`${filtered.length} of ${options.length} skill(s) match.`));
+  }
+
+  const choices = filtered.map(o => ({
+    name: o.name,
+    value: o.value ?? o.name,
+    description: o.description,
+    disabled: o.disabled || false,
+  }));
+
+  return checkbox({
+    message,
+    choices,
+    pageSize: 15,
+  });
+}
+
 export async function selectOne(
   options: SelectOption[],
   message: string,

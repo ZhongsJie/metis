@@ -5,7 +5,7 @@ import { getSkillsDir } from '../sources/config.js';
 import { createSymlink, removeSymlink, isSymlink } from '../utils/symlink.js';
 import { existsSync } from 'node:fs';
 import { resolve, join } from 'node:path';
-import { checkboxSelect } from '../utils/interactive.js';
+import { filteredCheckboxSelect } from '../utils/interactive.js';
 
 type Platform = 'claude-code' | 'codex';
 
@@ -95,7 +95,7 @@ export function registerLinkCommand(program: Command): void {
           };
         });
 
-        const selected = await checkboxSelect(options, 'Select skills to link');
+        const selected = await filteredCheckboxSelect(options, 'Select skills to link');
 
         if (selected.length === 0) {
           console.log(chalk.dim('Cancelled.'));
@@ -186,7 +186,7 @@ export function registerLinkCommand(program: Command): void {
           };
         });
 
-        const selected = await checkboxSelect(options, 'Select skills to unlink');
+        const selected = await filteredCheckboxSelect(options, 'Select skills to unlink');
 
         if (selected.length === 0) {
           console.log(chalk.dim('Cancelled.'));
