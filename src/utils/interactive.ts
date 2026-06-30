@@ -220,11 +220,20 @@ const searchCheckboxPrompt = createPrompt<NormalizedChoice[], SearchCheckboxConf
     });
 
     // ---- render ----
-    // Readline's line buffer displays the search input — do NOT render a
-    // second search bar here.  Only render the results list below.
+    // Readline's line buffer handles the search input display; we show
+    // the current filter + count here so the user always knows the active
+    // search term.
     const message = theme.style.message(config.message, status);
-    const countHint = search ? chalk.dim(` — ${filtered.length}/${allItems.length}`) : '';
-    let out = `${prefix} ${message}${countHint}\n`;
+    let headerLine = `${prefix} ${message}`;
+    if (search) {
+      headerLine +=
+        chalk.dim('  filter ') +
+        chalk.cyanBright(`"${search}"`) +
+        chalk.dim(` — ${filtered.length}/${allItems.length} match${filtered.length === 1 ? '' : 'es'}`);
+    } else {
+      headerLine += chalk.dim('  (type to search)');
+    }
+    let out = `${headerLine}\n`;
 
     // Choices
     if (filtered.length === 0 && search) {
