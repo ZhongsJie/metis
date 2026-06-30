@@ -243,6 +243,7 @@ const searchCheckboxPrompt = createPrompt<NormalizedChoice[], SearchCheckboxConf
         items: filtered,
         active: safeCursor,
         pageSize: 10,
+        loop: false,
         renderItem({ item, isActive }) {
           const pointer = isActive ? ICON_CURSOR : ' ';
           const mark = item.checked ? ICON_CHECKED : ICON_UNCHECKED;
