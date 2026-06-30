@@ -147,6 +147,8 @@ const searchCheckboxPrompt = createPrompt<NormalizedChoice[], SearchCheckboxConf
 
     // ---- key handling ----
     useKeypress((key, rl) => {
+      // Some terminal events (e.g. mouse) have no key name
+      if (!key.name) return;
       // Enter → confirm
       if (isEnterKey(key)) {
         const selected = allItems.filter(i => i.checked && !i.disabled);
