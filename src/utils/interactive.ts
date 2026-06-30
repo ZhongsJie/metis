@@ -22,6 +22,9 @@ export interface SelectOption {
   description: string;
   value?: string;
   disabled?: boolean;
+  /** Tag shown after the name (e.g. "linked") — styled dim unless overridden */
+  tag?: string;
+  tagStyle?: (text: string) => string;
 }
 
 interface NormalizedChoice {
@@ -30,6 +33,8 @@ interface NormalizedChoice {
   description?: string;
   disabled: boolean;
   checked: boolean;
+  tag?: string;
+  tagStyle?: (text: string) => string;
 }
 
 // ---------------------------------------------------------------------------
@@ -118,6 +123,8 @@ function normalizeOptions(options: SelectOption[]): NormalizedChoice[] {
     description: o.description,
     disabled: o.disabled ?? false,
     checked: false,
+    tag: o.tag,
+    tagStyle: o.tagStyle,
   }));
 }
 
@@ -247,7 +254,11 @@ const searchCheckboxPrompt = createPrompt<NormalizedChoice[], SearchCheckboxConf
         renderItem({ item, isActive }) {
           const pointer = isActive ? ICON_CURSOR : ' ';
           const mark = item.checked ? ICON_CHECKED : ICON_UNCHECKED;
-          const label = item.disabled ? chalk.dim(chalk.strikethrough(item.name)) : item.name;
+          let label = item.disabled ? chalk.dim(chalk.strikethrough(item.name)) : item.name;
+          if (item.tag) {
+            const style = item.tagStyle ?? chalk.dim;
+            label += ' ' + style(item.tag);
+          }
           const desc = item.description
             ? '  ' + chalk.dim(item.description.slice(0, 60))
             : '';

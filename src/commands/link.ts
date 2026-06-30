@@ -87,11 +87,12 @@ export function registerLinkCommand(program: Command): void {
 
         const options = allSkills.map(s => {
           const isLinked = linkedHere.has(s.id);
-          const status = isLinked ? chalk.green(' (linked)') : '';
           return {
-            name: `${s.name} ${chalk.dim(`(${s.id})`)}${status}`,
+            name: s.name,
             value: s.id,
             description: s.description,
+            tag: isLinked ? 'linked' : undefined,
+            tagStyle: isLinked ? chalk.green : undefined,
           };
         });
 
@@ -178,11 +179,12 @@ export function registerLinkCommand(program: Command): void {
 
         const options = allSkills.map(s => {
           const isLinked = linkedHere.has(s.id);
-          const status = isLinked ? '' : chalk.gray(' (not linked)');
           return {
-            name: `${s.name} ${chalk.dim(`(${s.id})`)}${status}`,
+            name: s.name,
             value: s.id,
             description: s.description,
+            tag: isLinked ? 'linked' : 'not linked',
+            tagStyle: isLinked ? chalk.green : chalk.dim,
           };
         });
 
