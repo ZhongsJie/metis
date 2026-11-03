@@ -1,7 +1,7 @@
 {
   "name": "metis",
   "version": "0.1.0",
-  "description": "Per-project skill manager for Claude Code — install, organize, and link skills with symlinks",
+  "description": "Per-project skill manager for AI coding assistants — detect, organize, and link skills with symlinks",
   "private": true,
   "type": "module",
   "bin": {

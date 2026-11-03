@@ -27,10 +27,8 @@ metis source add https://github.com/obra/superpowers.git
 # Search available skills
 metis search pptx
 
-# Initialize a project for metis linking
-metis init ~/my-project
-
 # Link skills to your project (interactive checkbox)
+# The platform skills directory is created automatically when needed.
 metis link -i -t ~/my-project
 
 # List discovered skills
@@ -44,7 +42,7 @@ metis linked
 
 | Command | Description |
 |---------|-------------|
-| `metis init [path]` | Create `.claude/skills/` or `.codex/skills/` in project |
+| `metis init [path]` | Detect assistants and create `.agents/skills/` (Codex) or `.claude/skills/` |
 | `metis source add <url>` | Clone a git source and scan its skills |
 | `metis source add <url> --name <name>` | Clone with an explicit source name |
 | `metis source list` | List configured sources |
@@ -61,7 +59,24 @@ metis linked
 
 ## Interactive Mode
 
-Use `-i` for interactive selection with checkbox UI:
+`metis init` and `metis link -i` detect supported assistants from the target project and offer:
+
+```text
+◇ Detected harnesses
+  Codex CLI        /path/to/project/.agents
+
+? Install for detected harnesses only, or customize?
+❯ Detected only (codex)
+  Customize…
+```
+
+Choose **Detected only** to use all detected assistants, or **Customize…** to select Codex CLI and/or Claude Code with checkboxes. Link then prompts for skills. Selecting no targets or skills cancels without writing files; Ctrl+C also cancels.
+
+Detection prefers project directories: `.agents` or `.codex` for Codex, `.claude` for Claude Code. If none are present, Metis checks the same directories in your home folder. Installation always targets the selected project: Codex uses `.agents/skills`, Claude Code uses `.claude/skills`. Existing `.codex/skills` links remain visible to `linked` and removable with `unlink`; they are not moved automatically.
+
+Use `-p codex` or `-p claude-code` to skip target selection. Without a terminal, automatic selection requires exactly one detected assistant; otherwise pass `-p` explicitly. `metis linked` reports both platforms; `-p` filters its output.
+
+Use `-i` for interactive skill selection with checkbox UI:
 
 ```bash
 metis remove -i           # pick skills to remove
@@ -86,7 +101,7 @@ Color-coded status indicators:
 | `-t, --to <path>` | link | Target project path (default: cwd) |
 | `-f, --from <path>` | unlink | Source project path (default: cwd) |
 | `-f, --force` | source remove, remove | Force removal |
-| `-p, --platform <p>` | init, link, unlink | Platform: `claude-code` (default) or `codex` |
+| `-p, --platform <p>` | init, link, unlink, linked | Platform: `codex` or `claude-code`; omit to detect/select |
 
 ## How It Works
 
@@ -117,7 +132,7 @@ Color-coded status indicators:
 
 **Skill discovery** runs after `source add` and `source update`, writing metadata to `~/.metis/registry.json`.
 
-**Project linking** requires `metis init` first, then creates a symlink from `<project>/.claude/skills/<name>/` (or `.codex/skills/`) pointing to the skill directory. AI coding assistants discover skills in these directories per-project.
+**Project linking** creates the platform skills directory when needed, then creates a symlink from `<project>/.claude/skills/<name>/` (or `.agents/skills/` for Codex) pointing to the skill directory. `metis init` remains available when you want to initialize the directory explicitly. AI coding assistants discover skills in these directories per-project.
 
 ## Development
 

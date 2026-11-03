@@ -15,7 +15,7 @@ const program = new Command();
 
 program
   .name('metis')
-  .description('Per-project skill manager for Claude Code — install, organize, and link')
+  .description('Per-project skill manager for AI coding assistants — detect, organize, and link')
   .version('0.1.0')
   .addHelpText('after', `
 ${chalk.dim('Examples:')}
@@ -33,4 +33,11 @@ registerRemoveCommand(program);
 registerUpdateCommand(program);
 registerLinkCommand(program);
 
-program.parse();
+program.parseAsync().catch((error: Error) => {
+  if (error.name === 'ExitPromptError') {
+    console.log(chalk.dim('Cancelled.'));
+    return;
+  }
+  console.error(chalk.red(error.message));
+  process.exitCode = 1;
+});
