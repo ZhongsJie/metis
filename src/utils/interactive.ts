@@ -25,6 +25,8 @@ export interface SelectOption {
   /** Tag shown after the name (e.g. "linked") — styled dim unless overridden */
   tag?: string;
   tagStyle?: (text: string) => string;
+  /** Group label used to split options into source tabs (left/right switching). */
+  tab?: string;
 }
 
 interface NormalizedChoice {
@@ -35,6 +37,7 @@ interface NormalizedChoice {
   checked: boolean;
   tag?: string;
   tagStyle?: (text: string) => string;
+  tab: string;
 }
 
 // ---------------------------------------------------------------------------
@@ -125,6 +128,7 @@ function normalizeOptions(options: SelectOption[]): NormalizedChoice[] {
     checked: false,
     tag: o.tag,
     tagStyle: o.tagStyle,
+    tab: o.tab ?? '',
   }));
 }
 
@@ -137,17 +141,34 @@ const searchCheckboxPrompt = createPrompt<NormalizedChoice[], SearchCheckboxConf
     const [allItems, setAllItems] = useState(normalizeOptions(config.options));
     const [cursor, setCursor] = useState(0);
 
-    // Filtered items derived from search term
+    // Source tabs (ordered, distinct); a tab bar only renders when skills span
+    // more than one source, so a single-source install keeps the flat list.
+    const sourceTabs = useMemo(() => {
+      const seen: string[] = [];
+      for (const item of allItems) {
+        if (item.tab && !seen.includes(item.tab)) seen.push(item.tab);
+      }
+      return seen.sort((a, b) => a.localeCompare(b));
+    }, [allItems]);
+    // "All" is the default landing tab; left/right steps through the sources.
+    const tabs = sourceTabs.length > 1 ? ['All', ...sourceTabs] : [];
+    const [activeTab, setActiveTab] = useState(0);
+
+    // Items in the active tab, narrowed by the search term.
     const filtered: NormalizedChoice[] = useMemo(() => {
+      const label = tabs[activeTab];
+      const base = !tabs.length || label === undefined || label === 'All'
+        ? allItems
+        : allItems.filter(item => item.tab === label);
       const term = search.toLowerCase().trim();
-      if (!term) return allItems;
-      return allItems.filter(
+      if (!term) return base;
+      return base.filter(
         item =>
           item.name.toLowerCase().includes(term) ||
           (item.description ?? '').toLowerCase().includes(term) ||
           item.value.toLowerCase().includes(term),
       );
-    }, [search, allItems]);
+    }, [search, allItems, activeTab, tabs]);
 
     const safeCursor =
       filtered.length === 0 ? 0 : Math.min(cursor, filtered.length - 1);
@@ -184,6 +205,15 @@ const searchCheckboxPrompt = createPrompt<NormalizedChoice[], SearchCheckboxConf
               : item,
           ),
         );
+        return;
+      }
+
+      // Left / Right → switch source tab
+      if (tabs.length > 1 && (key.name === 'left' || key.name === 'right')) {
+        rl.clearLine(0);
+        if (search) rl.write(search);
+        setActiveTab((activeTab + (key.name === 'left' ? -1 : 1) + tabs.length) % tabs.length);
+        setCursor(0);
         return;
       }
 
@@ -231,16 +261,25 @@ const searchCheckboxPrompt = createPrompt<NormalizedChoice[], SearchCheckboxConf
     // the current filter + count here so the user always knows the active
     // search term.
     const message = theme.style.message(config.message, status);
+    const tabCount = !tabs.length || tabs[activeTab] === 'All'
+      ? allItems.length
+      : allItems.filter(i => i.tab === tabs[activeTab]).length;
     let headerLine = `${prefix} ${message}`;
     if (search) {
       headerLine +=
         chalk.dim('  filter ') +
         chalk.cyanBright(`"${search}"`) +
-        chalk.dim(` — ${filtered.length}/${allItems.length} match${filtered.length === 1 ? '' : 'es'}`);
+        chalk.dim(` — ${filtered.length}/${tabCount} match${filtered.length === 1 ? '' : 'es'}`);
     } else {
       headerLine += chalk.dim('  (type to search)');
     }
-    let out = `${headerLine}\n`;
+    let out = '';
+    if (tabs.length > 1) {
+      out += '  ' + chalk.dim('source ') + tabs.map((tab, i) =>
+        i === activeTab ? chalk.cyan.bold(`[${tab}]`) : chalk.dim(tab),
+      ).join(chalk.dim(' · ')) + '\n';
+    }
+    out += `${headerLine}\n`;
 
     // Choices
     if (filtered.length === 0 && search) {
@@ -271,7 +310,8 @@ const searchCheckboxPrompt = createPrompt<NormalizedChoice[], SearchCheckboxConf
     // Help footer
     const checkedCount = allItems.filter(i => i.checked).length;
     const summary = checkedCount > 0 ? `    ${chalk.green(`${checkedCount} selected`)}` : '';
-    out += chalk.dim('\n  ↑↓ navigate  space toggle  type search  enter confirm  esc cancel');
+    const tabHint = tabs.length > 1 ? '  ←→ switch source' : '';
+    out += chalk.dim(`\n  ↑↓ navigate${tabHint}  space toggle  type search  enter confirm  esc cancel`);
     out += summary;
 
     return out;
@@ -283,7 +323,8 @@ const searchCheckboxPrompt = createPrompt<NormalizedChoice[], SearchCheckboxConf
  *
  * The user types to filter the list dynamically, uses arrow keys to
  * navigate, space to toggle, and enter to confirm.  Press Escape to
- * cancel (return empty).
+ * cancel (return empty).  When options carry a `tab` label spanning more
+ * than one value, they are split into source tabs switched with ←/→.
  */
 export async function filteredCheckboxSelect(
   options: SelectOption[],

@@ -84,6 +84,7 @@ export function registerLinkCommand(program: Command): void {
             name: skill.name,
             value: skill.id,
             description: skill.description,
+            tab: skill.source,
             tag: linked.length ? `linked: ${linked.join(', ')}` : (operation === 'unlink' ? 'not linked' : undefined),
             tagStyle: linked.length ? chalk.green : chalk.dim,
           };
