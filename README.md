@@ -128,7 +128,7 @@ Color-coded status indicators:
         └── my-single-skill → ~/.metis/skills/my-single-skill
 ```
 
-**Sources** are git repositories cloned under `~/.metis/skills/<source>/`. A repository can be a single skill with `SKILL.md` at the root, or a collection with `skills/*/SKILL.md`.
+**Sources** are git repositories cloned under `~/.metis/skills/<source>/`. A skill is any directory containing a `SKILL.md`, so single-skill repositories, flat collections (`skills/*/`), categorised collections (`skills/<category>/*/`), plugin bundles (`plugins/*/skills/*/`) and `.claude/skills/*` layouts are all discovered by walking the repository. Directories inside a skill are not scanned further, and vendored/test directories (`node_modules`, `dist`, `tests`, `fixtures`, …) are skipped.
 
 **Skill discovery** runs after `source add` and `source update`, writing metadata to `~/.metis/registry.json`.
 

@@ -7,7 +7,15 @@ export interface SkillMeta {
 }
 
 export function parseSkillFile(content: string): SkillMeta | null {
-  const { data, content: body } = matter(content);
+  let parsed: matter.GrayMatterFile<string>;
+  try {
+    parsed = matter(content);
+  } catch {
+    // Repos scanned wholesale may contain malformed frontmatter; treat it the
+    // same as a non-skill file rather than aborting the whole scan.
+    return null;
+  }
+  const { data, content: body } = parsed;
   if (!data.name || !data.description) return null;
   return {
     name: data.name,

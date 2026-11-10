@@ -35,6 +35,15 @@ Body`;
     assert.equal(result, null);
   });
 
+  it('returns null for malformed frontmatter instead of throwing', () => {
+    const content = `---
+name: broken
+description: Has an unquoted colon: inside the value
+---
+Body`;
+    assert.equal(parseSkillFile(content), null);
+  });
+
   it('handles empty body', () => {
     const content = `---
 name: minimal

@@ -1,5 +1,5 @@
 import { spawn } from 'node:child_process';
-import { existsSync, readdirSync, readFileSync, rmSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync, realpathSync, rmSync, statSync, type Dirent } from 'node:fs';
 import { basename, join, resolve } from 'node:path';
 import { simpleGit } from 'simple-git';
 import { Registry, SkillEntry } from '../registry.js';
@@ -79,40 +79,111 @@ export async function updateSource(source: SkillSource, skillsDir: string): Prom
   await simpleGit(repoPath).pull();
 }
 
+const SKILL_FILE = 'SKILL.md';
+
+/**
+ * Directories that never hold installable skills. Skipping them keeps large
+ * repositories fast and avoids surfacing vendored copies or test fixtures.
+ */
+const IGNORED_DIRS = new Set([
+  '.git',
+  'node_modules',
+  'dist',
+  'build',
+  'vendor',
+  'target',
+  '.venv',
+  'venv',
+  '__pycache__',
+  'coverage',
+  '.next',
+  '.cache',
+  '.turbo',
+  'test',
+  'tests',
+  '__tests__',
+  'testdata',
+  'fixtures',
+  'e2e',
+]);
+
+/**
+ * Finds every skill directory in a cloned source.
+ *
+ * A skill is any directory containing `SKILL.md` — the one convention shared by
+ * Claude Code, Codex and other skill ecosystems. Walking by content instead of
+ * by fixed paths means layouts like `skills/<name>/`, `skills/<category>/<name>/`,
+ * plugin bundles and single-skill repositories are all discovered.
+ *
+ * Discovery stops at a nested skill: helpers, examples and fixtures inside a
+ * skill are not skills themselves. A repository root is the exception, since a
+ * root `SKILL.md` may coexist with a separate `skills/` collection.
+ */
+export function discoverSkillDirectories(repoPath: string): string[] {
+  const found: string[] = [];
+  const visited = new Set<string>();
+
+  const walk = (absDir: string, relDir: string, isRoot: boolean): void => {
+    let realDir: string;
+    try {
+      realDir = realpathSync(absDir);
+    } catch {
+      return;
+    }
+    // Symlinked directories can point at an already-scanned location or loop.
+    if (visited.has(realDir)) return;
+    visited.add(realDir);
+
+    let entries: Dirent[];
+    try {
+      entries = readdirSync(absDir, { withFileTypes: true });
+    } catch {
+      return;
+    }
+    entries.sort((a, b) => a.name.localeCompare(b.name));
+
+    const hasSkillFile = entries.some(entry => entry.name === SKILL_FILE && (entry.isFile() || entry.isSymbolicLink()));
+    if (hasSkillFile) {
+      found.push(relDir);
+      if (!isRoot) return;
+    }
+
+    for (const entry of entries) {
+      if (IGNORED_DIRS.has(entry.name)) continue;
+
+      let isDirectory = entry.isDirectory();
+      if (!isDirectory && entry.isSymbolicLink()) {
+        try {
+          isDirectory = statSync(join(absDir, entry.name)).isDirectory();
+        } catch {
+          isDirectory = false;
+        }
+      }
+      if (!isDirectory) continue;
+
+      walk(join(absDir, entry.name), relDir === '.' ? entry.name : join(relDir, entry.name), false);
+    }
+  };
+
+  walk(repoPath, '.', true);
+  return found;
+}
+
 export function scanSourceSkills(source: SkillSource, skillsDir: string): AvailableSkill[] {
   const repoPath = getSourceRepoPath(skillsDir, source.name);
-  const candidates: string[] = [];
-  const rootSkill = join(repoPath, 'SKILL.md');
-  if (existsSync(rootSkill)) {
-    candidates.push('.');
-  }
-
-  const nestedSkillsDir = join(repoPath, 'skills');
-  if (existsSync(nestedSkillsDir)) {
-    for (const dir of readdirSync(nestedSkillsDir, { withFileTypes: true })) {
-      if (!dir.isDirectory()) continue;
-      if (existsSync(join(nestedSkillsDir, dir.name, 'SKILL.md'))) {
-        candidates.push(join('skills', dir.name));
-      }
-    }
-  }
-
-  // Claude Code plugin layout: .claude/skills/*/SKILL.md
-  const claudeSkillsDir = join(repoPath, '.claude', 'skills');
-  if (existsSync(claudeSkillsDir)) {
-    for (const dir of readdirSync(claudeSkillsDir, { withFileTypes: true })) {
-      if (!dir.isDirectory()) continue;
-      if (existsSync(join(claudeSkillsDir, dir.name, 'SKILL.md'))) {
-        candidates.push(join('.claude', 'skills', dir.name));
-      }
-    }
-  }
+  const candidates = discoverSkillDirectories(repoPath);
 
   const seen = new Set<string>();
   const skills: AvailableSkill[] = [];
   for (const skillRelPath of candidates) {
-    const skillMd = join(repoPath, skillRelPath, 'SKILL.md');
-    const meta = parseSkillFile(readFileSync(skillMd, 'utf-8'));
+    const skillMd = join(repoPath, skillRelPath, SKILL_FILE);
+    let raw: string;
+    try {
+      raw = readFileSync(skillMd, 'utf-8');
+    } catch {
+      continue;
+    }
+    const meta = parseSkillFile(raw);
     if (!meta) continue;
     if (seen.has(meta.name)) {
       console.log(`Warning: duplicate skill '${meta.name}' in source '${source.name}' skipped.`);
