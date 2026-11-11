@@ -154,21 +154,26 @@ const searchCheckboxPrompt = createPrompt<NormalizedChoice[], SearchCheckboxConf
     const tabs = sourceTabs.length > 1 ? ['All', ...sourceTabs] : [];
     const [activeTab, setActiveTab] = useState(0);
 
-    // Items in the active tab, narrowed by the search term.
-    const filtered: NormalizedChoice[] = useMemo(() => {
+    // Items in the active tab, before any search narrowing. Ctrl+A toggles
+    // this whole set, so "select source" grabs every skill in the tab.
+    const tabItems: NormalizedChoice[] = useMemo(() => {
       const label = tabs[activeTab];
-      const base = !tabs.length || label === undefined || label === 'All'
+      return !tabs.length || label === undefined || label === 'All'
         ? allItems
         : allItems.filter(item => item.tab === label);
+    }, [allItems, activeTab, tabs]);
+
+    // tabItems narrowed by the search term.
+    const filtered: NormalizedChoice[] = useMemo(() => {
       const term = search.toLowerCase().trim();
-      if (!term) return base;
-      return base.filter(
+      if (!term) return tabItems;
+      return tabItems.filter(
         item =>
           item.name.toLowerCase().includes(term) ||
           (item.description ?? '').toLowerCase().includes(term) ||
           item.value.toLowerCase().includes(term),
       );
-    }, [search, allItems, activeTab, tabs]);
+    }, [search, tabItems]);
 
     const safeCursor =
       filtered.length === 0 ? 0 : Math.min(cursor, filtered.length - 1);
@@ -192,15 +197,14 @@ const searchCheckboxPrompt = createPrompt<NormalizedChoice[], SearchCheckboxConf
         return;
       }
 
-      // Ctrl+A → toggle all visible
+      // Ctrl+A → toggle every skill in the current source tab (search-free).
       if (key.name === 'a' && key.ctrl) {
-        const allChecked = filtered
-          .filter(i => !i.disabled)
-          .every(i => allItems.find(o => o.value === i.value)?.checked);
-        const visibleValues = new Set(filtered.map(i => i.value));
+        const enabled = tabItems.filter(i => !i.disabled);
+        const allChecked = enabled.every(i => i.checked);
+        const tabValues = new Set(enabled.map(i => i.value));
         setAllItems(
           allItems.map(item =>
-            visibleValues.has(item.value) && !item.disabled
+            tabValues.has(item.value)
               ? { ...item, checked: !allChecked }
               : item,
           ),
@@ -311,7 +315,7 @@ const searchCheckboxPrompt = createPrompt<NormalizedChoice[], SearchCheckboxConf
     const checkedCount = allItems.filter(i => i.checked).length;
     const summary = checkedCount > 0 ? `    ${chalk.green(`${checkedCount} selected`)}` : '';
     const tabHint = tabs.length > 1 ? '  ←→ switch source' : '';
-    out += chalk.dim(`\n  ↑↓ navigate${tabHint}  space toggle  type search  enter confirm  esc cancel`);
+    out += chalk.dim(`\n  ↑↓ navigate${tabHint}  space toggle  ctrl+a select source  type search  enter confirm  esc cancel`);
     out += summary;
 
     return out;

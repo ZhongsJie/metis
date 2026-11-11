@@ -84,8 +84,10 @@ metis link -i             # pick skills to link (checkbox)
 metis unlink -i           # pick skills to unlink (checkbox)
 ```
 
+- **←/→** switch source (shown when multiple sources are installed)
 - **↑/↓** navigate
-- **Space** toggle
+- **Space** toggle a single skill
+- **Ctrl+A** select/deselect the whole current source
 - **Enter** confirm
 - **Ctrl+C** cancel
 
